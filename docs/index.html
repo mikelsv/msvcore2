@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>msvcore library</title>
+<meta name='Docat Wiki Generator' ver='0.0.0.3' warning='Do Not Write To This File, All Data Well Be Lost!' md5='d052088cb60c82f7abd88496fe055c24' data='06.12.16 03:21:37' />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="css.css" />
+</head>
+<body>
+<div class="splash">
+<div class="site">
+<div class="wrap">
+<header>
+<div class="header">
+<div class="header_top cfix">
+<a href="http://github.com/mikelsv/msvcore2" class="logo">msvcore2<span> MikelSV</span></a>
+
+</div>
+
+
+
+<nav class="menuTop cfix">
+<a href="http://centerix.ru/" class="">centerix.ru</a><span></span>
+<a href="https://github.com/mikelsv/docat" class="active">Docat</a><span></span>
+<a href="http://github.com/mikelsv" class="">Git Hub</a>
+</nav>
+
+
+</div>
+</header>
+
+<section class="statistic">
+<div class="statistic cfix" align="left">
+
+
+<h1>msvcore library</h1><hr>
+<table border=0 cellpadding=0 cellspacing=3><tr><td align=center><h3>Contents:</h3></td></tr><tr><td><a href='#What_is?'>1 What is?</a></td></tr><tr><td><a href='#License'>2 License</a></td></tr><tr><td><a href='#How_to_use_it'>3 How to use it</a></td></tr><tr><td><a href='#Base_info'>4 Base info</a></td></tr><tr><td><a href='#Null-terminate_string'>4.1 Null-terminate string</a></td></tr><tr><td><a href='#Classes'>5 Classes</a></td></tr><tr><td><a href='#Core'>5.1 Core</a></td></tr><tr><td><a href='#String'>5.2 String</a></td></tr><tr><td><a href='#Allocate'>5.3 Allocate</a></td></tr><tr><td><a href='#Dynamic_arrays'>5.4 Dynamic arrays</a></td></tr><tr><td><a href='#Config'>5.5 Config</a></td></tr><tr><td><a href='#Run_process'>5.6 Run process</a></td></tr><tr><td><a href='#Regular_extensions'>5.7 Regular extensions</a></td></tr><tr><td><a href='#Hash'>5.8 Hash</a></td></tr><tr><td><a href='#Http'>5.9 Http</a></td></tr><tr><td><a href='#Net'>5.10 Net</a></td></tr><tr><td><a href='#Crypto'>5.11 Crypto</a></td></tr><tr><td><a href='#Buffer'>5.12 Buffer</a></td></tr><tr><td><a href='#Io'>5.13 Io</a></td></tr><tr><td><a href='#Lock'>5.14 Lock</a></td></tr><tr><td><a href='#MultiType'>5.15 MultiType</a></td></tr><tr><td><a href='#Time'>5.16 Time</a></td></tr><tr><td><a href='#Functions'>6 Functions</a></td></tr><tr><td><a href='#Extensions'>7 Extensions</a></td></tr></table>
+<h2><span id='What_is?'>What is?</span></h2><hr>It's msvcore - crossplatform library C++. Version 2. First build in 2005.
+<br>
+<br>Build on: Windows, Linux, Android(Jni), flash(Crossbridge).
+<br>
+<br><h2><span id='License'>License</span></h2><hr><a href='http://choosealicense.com/licenses/mit/'>MIT License</a>.
+<br>
+<br><pre>
+Copyright (c) 2016 MikelSV
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</pre>
+<br>
+<br><h2><span id='How_to_use_it'>How to use it</span></h2><hr>* Create new c++ project.
+<br>* Create new .cpp file.
+<br>* Add code to this file:
+<br>
+<br><pre>
+#define PROJECTNAME "projectname" // Set your project name
+#define PROJECTVER PROJECTNAME ## _versions
+#define USEMSV_GENERALCPP
+
+// Add msvcore v.2
+#include "PATH_TO_MSVCORE/msvcore2/msvcore.cpp" // Set your path
+
+// You may use prject versions
+Versions PROJECTVER[]={
+	// new version to up
+	"0.0.0.1", "01.12.2016 15:51",
+	"0.0.0.0", "23.11.2016 10:45"
+};
+
+// Main
+int main(int args, char* arg[]){
+	msvcoremain(args, arg);
+	print(PROJECTNAME, " v.", PROJECTVER[0].ver," (", PROJECTVER[0].date, ").\r\n");
+
+	// Write your code
+	
+	return 0;
+}
+
+</pre>
+<br>
+<br>* Ok. It's simple project.
+<br>
+<br>
+<br><h2><span id='Base_info'>Base info</span></h2><hr>
+<br><h3><span id='Null-terminate_string'>Null-terminate string</span></h3>Please, don't use null-terminate string. Use <a href='VString.html'>VString[BAD LINK]</a>. It have unsigned char * data - pointer to data, and unsigned int sz - size. It's sefe. If char * string not contained null - ooops, program may crash. <a href='VString.html'>VString[BAD LINK]</a> have size, programm don't crash where string have bad data.
+<br>
+<br>
+<br><h2><span id='Classes'>Classes</span></h2><hr>
+<br><h3><span id='Core'>Core</span></h3>Versions - project versions.
+<br><a href='MsvCoreState.html' title='msvcore process state'>MsvCoreState</a> - process state. (Auto, don't use.)
+<br>ThreadStringCore - Helper for <a href='TString.html'>TString[BAD LINK]</a> class. (Auto, don't use.)
+<br>MsvCoreActivateSocket - initialize socket. Call WSAStartup() for Windows, signal(SIGPIPE, SIG_IGN) for linux. (Auto, don't use.)
+<br>
+<br><h3><span id='String'>String</span></h3><a href='VString.html'>VString[BAD LINK]</a> - Virtual String. Use as string pointer.
+<br><a href='MString.html'>MString[BAD LINK]</a> - String. Use as class value.
+<br><a href='SString.html'>SString[BAD LINK]</a> - Stack String. Use as temporary.
+<br><a href='TString.html'>TString[BAD LINK]</a> - Thread / Temp String use as temporary.
+<br><a href='LString.html'>LString[BAD LINK]</a> - Line string. Use for adding strings.
+<br><a href='MStringS.html'>MStringS[BAD LINK]</a> - Short String use for conver ASCII(char) string to utf(short).
+<br>
+<br><h3><span id='Allocate'>Allocate</span></h3><a href='AListAllocDef.html' title='AListAllocDef - memory allocator'>AListAllocDef</a> - malloc() / free() allocator.
+<br><a href='AListAllocUList.html' title='AListAllocUList - unlimited memory allocator'>AListAllocUList</a> - Unlimited List allocator.
+<br><a href='AListAllocOList.html'>AListAllocOList[BAD LINK]</a> - Object List allocator. Best.
+<br><a href='AListAllocOListFast.html'>AListAllocOListFast[BAD LINK]</a> - Object List allocator. Need very more memory.
+<br><a href='AListAllocOListTree.html'>AListAllocOListTree[BAD LINK]</a> - Object List allocator used Tree. So slow. 
+<br>
+<br><h3><span id='Dynamic_arrays'>Dynamic arrays</span></h3><a href='IList.html'>IList[BAD LINK]</a> - Ideal List. Vector. One memory block.
+<br><a href='OList.html'>OList[BAD LINK]</a> - Object List. Used <a href='AListAllocOList.html'>AListAllocOList[BAD LINK]</a>.
+<br><a href='UList.html'>UList[BAD LINK]</a> - Unlimited List. Used <a href='AListAllocUList.html' title='AListAllocUList - unlimited memory allocator'>AListAllocUList</a>.
+<br><a href='TrieList.html'>TrieList[BAD LINK]</a> - <a href='https://en.wikipedia.org/wiki/:trie'>Trie</a> dynamic array.
+<br>
+<br><h3><span id='Config'>Config</span></h3><a href='ConfLine.html'>ConfLine[BAD LINK]</a> - Configuration file class. Can Get()/Set() key/value.
+<br><a href='ConfLineOptions.html'>ConfLineOptions[BAD LINK]</a> - Configuration class. Can only Get() key/value. 
+<br>
+<br><h3><span id='Run_process'>Run process</span></h3><a href='PipeLine.html'>PipeLine[BAD LINK]</a> - exec process using <a href='LString.html'>LString[BAD LINK]</a> bufer.
+<br><a href='PipeLine2.html'>PipeLine2[BAD LINK]</a> - exec process using ring buffer.
+<br>
+<br><h3><span id='Regular_extensions'>Regular extensions</span></h3><a href='MSVEF.html'>MSVEF[BAD LINK]</a> - my variant of regfular extension.
+<br>
+<br><h3><span id='Hash'>Hash</span></h3><a href='Base64.html'>Base64[BAD LINK]</a> - encode & decode to base64.
+<br><a href='MHash.html'>MHash[BAD LINK]</a> - md5, sha1, sha256, rmd1 hash functions.
+<br>
+<br><h3><span id='Http'>Http</span></h3><a href='MCookie.html'>MCookie[BAD LINK]</a> - Http cookie container. Cookie array. Generate cookie request.
+<br><a href='MHttp.html'>MHttp[BAD LINK]</a> - Http head class.
+<br><a href='GetHttp.html'>GetHttp[BAD LINK]</a> - Http[s] request.
+<br><a href='GetHttp2.html'>GetHttp2[BAD LINK]</a> - Http[s] request used <a href='MCookie.html'>MCookie[BAD LINK]</a>.
+<br>
+<br><h3><span id='Net'>Net</span></h3><a href='ConIp.html'>ConIp[BAD LINK]</a> - Connect to ip used ip v4 adress. Or listen port. Return SOCKET.
+<br>
+<br><h3><span id='Crypto'>Crypto</span></h3>MsvCoreActivateSsl - initialize SSL. (Auto, don't use.)
+<br>MsspCoreEl - class for testing & find errors.
+<br><a href='MySSL.html'>MySSL[BAD LINK]</a> - OpenSSL helper for accept, connect, recv, send functions. 
+<br>
+<br><h3><span id='Buffer'>Buffer</span></h3><a href='RecvData.html'>RecvData[BAD LINK]</a> - one memory buffer for readed data.
+<br><a href='SendData.html'>SendData[BAD LINK]</a> - memory buffers.
+<br><a href='SendDataRing.html'>SendDataRing[BAD LINK]</a> - ring memory buffer.
+<br>
+<br><h3><span id='Io'>Io</span></h3><a href='ILink.html'>ILink[BAD LINK]</a> - Parser web and file link.
+<br><a href='Readdir.html'>Readdir[BAD LINK]</a> - read dir functions.
+<br>
+<br><h3><span id='Lock'>Lock</span></h3><a href='GLock.html'>GLock[BAD LINK]</a> - Critical section. Disable double lock, it's deadlock.
+<br><a href='TLock.html'>TLock[BAD LINK]</a> - Critical section. Enable multilock in one thread.
+<br><a href='CLock.html'>CLock[BAD LINK]</a> - Condition lock. Lock to signal.
+<br><a href='ALock.html'>ALock[BAD LINK]</a> - Auto lock/unlock Glock & Tlock.
+<br>
+<br><h3><span id='MultiType'>MultiType</span></h3><a href='MultiType.html'>MultiType[BAD LINK]</a>
+<br><a href='MTEDTX.html'>MTEDTX[BAD LINK]</a>
+<br><a href='MTEV.html'>MTEV[BAD LINK]</a>
+<br><a href='MTEVS.html'>MTEVS[BAD LINK]</a>
+<br><a href='MTEVA.html'>MTEVA[BAD LINK]</a>
+<br>
+<br><h3><span id='Time'>Time</span></h3><a href='MTime.html'>MTime[BAD LINK]</a> - Time functions.
+<br><a href='MTimer.html'>MTimer[BAD LINK]</a> - Timer functions.
+<br>
+<br><h2><span id='Functions'>Functions</span></h2><hr>Add functions list.
+<br>
+<br><h2><span id='Extensions'>Extensions</span></h2><hr>Add extension info.</div>
+</section>
+
+
+</div>
+
+
+<footer>
+
+ <div class="footer_menu">
+<nav class="menuTop cfix">
+<a href="http://centerix.ru/" class="">centerix.ru</a><span></span>
+<a href="index.html" class="active">Docat</a><span></span>
+<a href="http://github.com/mikelsv" class="">Git Hub</a>
+</nav>
+ </div>
+
+ <div class="footer_bottom cfix">
+ <div class="footer_bottom_copyright">Copyright c 2016 docat mikelsv</div>
+ <div class="footer_bottom_ssl">
+ </div>
+ </div>
+
+ </footer>
+</div>
+</div></body>
+</html>
