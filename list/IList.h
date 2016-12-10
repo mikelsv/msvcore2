@@ -72,7 +72,10 @@ public:
 		if(pos >= sz)
 			return 0;
 
-		memcpy(data + pos, data + pos + 1, sz - pos - 1);
+		if(opt & ILIST_OPT_DES)
+			(data + pos)->~Item();
+
+		memcpy(data + pos, data + pos + 1, (sz - pos - 1) * sizeof(Item));
 
 		sz --;
 		return 1;
@@ -123,9 +126,11 @@ public:
 			for(unsigned int i = 0; i < sz; i ++)
 				data[i].~Item();
 		
-		sz=0;
-		asz=0;
 		free(data);
+
+		data = 0;
+		asz = 0;
+		sz = 0;
 
 		return ;
 	}

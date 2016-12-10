@@ -46,6 +46,7 @@
 	#include <sys/ioctl.h>
 	#include <sys/resource.h>
 	#include <sys/socket.h>
+	#include <sys/time.h>
 	#include <sys/utsname.h>
 	#include <sys/wait.h>
 	#include <termios.h>

@@ -52,6 +52,9 @@ int main(int args, char* arg[]){
 // Formats:
 // #define USEMSV_XDATACONT - use XDataContainer ( Parsers: XML, Json )
 
+// Other: 
+// #define USEMSV_MSL_FL - use MSL Fast Line
+
 // Extensions:
 // #define USEMSV_PCRE - use PCRE functions // add to include path to pcre.h and pcre.lib
 // #define USEMSV_MYSQL - use MySQL // add to include path to mysql.h and mysql.lib
@@ -97,7 +100,7 @@ int main(int args, char* arg[]){
 // #define USEMSV_CJX - use CJX container
 
 // Other: 
-// #define USEMSV_MSL_FL - use MSL Fast Line
+// +++ #define USEMSV_MSL_FL - use MSL Fast Line
 // #define USEMSV_MSL_FV - use MSL Five
 // #define USEMSV_CONFLINE - use ConfLine
 // #define USEMSV_MODLINE - use ModLine
@@ -202,6 +205,10 @@ int main(int args, char* arg[]){
 
 #ifdef USEMSV_MYSQL
 	#include "proto/mysql-con.cpp"
+#endif
+
+#ifdef USEMSV_MSL_FL
+	#include "msl-fl/msl-fl.h"
 #endif
 
 #ifdef USEMSV_HTTP

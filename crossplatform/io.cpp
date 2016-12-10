@@ -11,9 +11,6 @@ void MsvCoreAllocConsole(){
 #endif
 #endif
 
-#include <sys/utime.h>
-
-
 ///////////////////////////////////////////////////////////////////////////////////// Print
 #ifdef USEMSV_TCPPRINT
 	int ConnectPort(VString lip, int port);
@@ -204,6 +201,7 @@ return path.str(0, ret-path.uchar());
 #endif 
 
 
+// File functions
 HFILE CreateFile(VString file, int op, int pm){
 	if(!file)
 		return -1;
@@ -225,7 +223,7 @@ int64 GetFilePointer(HFILE fl){
 	return lseek64(fl, 0, FILE_CURRENT);
 }
 
-int64 SetFilePointer(HFILE fl, int64 pos, int origin = FILE_BEGIN){
+int64 SetFilePointer(HFILE fl, int64 pos, int origin){
 	return lseek64(fl, pos, origin);
 }
 
@@ -270,7 +268,7 @@ int64 GetFileSize(HFILE hfile){
 	return sz;
 }
 
-
+// Dir functions
 bool IsDir(VString path){
 	MSVCORE_NORMALPATH(buf, path);
 
@@ -278,111 +276,23 @@ bool IsDir(VString path){
 
 	return (stt.st_mode & S_IFDIR) != 0;
 }
-int MkDir(VString path, unsigned int mode = 0){
+
+int MkDir(VString path, unsigned int mode){
 	MSVCORE_NORMALPATH(buf, path);
 
 	return !stdmkdir(path, mode);
 }
 
-int CopyFile(VString from, VString to){
-	MSVCORE_NORMALPATH(fbuf, from);
-	MSVCORE_NORMALPATH(tbuf, to);
-
-	sstat64 stt = GetFileInfo(fbuf);
-	if((stt.st_mode & S_IFDIR) != 0)
-		return 0;
-
-	sstat64 stt2 = GetFileInfo(tbuf);
-	if(stt.st_size == stt2.st_size && stt.st_ctime == stt2.st_ctime && stt.st_mtime == stt2.st_mtime)
-		return 1;
-
-	HFILE fl = CreateFile(fbuf, O_RDONLY, S_IREAD | S_IWRITE);
+// File operations
+bool IsFile(VString file){
+	HFILE fl = CreateFile(file, O_RDONLY, S_IREAD | S_IWRITE);
 	if(!ishandle(fl))
 		return 0;
 
-	HFILE fl2 = CreateFile(tbuf, O_RDWR, S_IREAD | S_IWRITE);
-	if(!ishandle(fl2)){
-		CloseHandle(fl);
-		return 0;
-	}
-
-	SetFilePointer(fl2, 0);
-	SetEndOfFile(fl2);
-
-	// 
-	unsigned char buf[S4K];	
-	int ret = 1;
-
-	int64 sz = stt.st_size;
-
-	while(sz){
-		int rd = ReadFile(fl, buf, minel(sz, S4K));		
-		int wr = WriteFile(fl2, buf, rd);
-
-		if(sz && rd != wr){
-			ret = 0;
-			break;
-		}
-
-		sz -= rd;
-	}
-
-	if(ret)
-		SetFileTime(fl2, stt.st_ctime, stt.st_atime, stt.st_mtime);
-
 	CloseHandle(fl);
-	CloseHandle(fl2);
-
-	return ret;
+	return 1;
 }
 
-FILETIME UnixTimeToWin(time_t time){
-	SYSTEMTIME SystemTime;
-	FILETIME LocalFileTime;
-	FILETIME ResultFileTime;
-
-	if(!time)
-		return ResultFileTime;
-
-	struct tm tmb;
-	_localtime64_s(&tmb, &time);
-
-	SystemTime.wYear   = (WORD)(tmb.tm_year + 1900);
-	SystemTime.wMonth  = (WORD)(tmb.tm_mon + 1);
-	SystemTime.wDay    = (WORD)(tmb.tm_mday);
-	SystemTime.wHour   = (WORD)(tmb.tm_hour);
-	SystemTime.wMinute = (WORD)(tmb.tm_min);
-	SystemTime.wSecond = (WORD)(tmb.tm_sec);
-	SystemTime.wMilliseconds = 0;
-
-	SystemTimeToFileTime(&SystemTime, &LocalFileTime);
-	LocalFileTimeToFileTime(&LocalFileTime, &ResultFileTime);
-
-	return ResultFileTime;
-}
-
-bool SetFileTime(HFILE fl, time_t ctime, time_t atime, time_t mtime){
-	FILETIME LocalFileTime = UnixTimeToWin(ctime);
-    FILETIME LastWriteTime = UnixTimeToWin(mtime);
-    FILETIME LastAccessTime = UnixTimeToWin(atime);
-
-	return SetFileTime((HANDLE)_get_osfhandle(fl), ctime ? &LocalFileTime : 0, atime ? &LastAccessTime : 0, mtime ? &LastWriteTime : 0);
-}
-
-int MoveFile(VString from, VString to){
-	MSVCORE_NORMALPATH(fbuf, from);
-	MSVCORE_NORMALPATH(tbuf, to);
-
-	return !_rename(from, to);
-}
-
-int DeleteFile(VString file){
-	MSVCORE_NORMALPATH(buf, file);
-
-	return _unlink(file);
-}
-
-// File Operations
 MString LoadFile(VString file){
 	MString ret;
 	unsigned int rd;
@@ -405,15 +315,6 @@ MString LoadFile(VString file){
 		return MString();
 
 	return ret;
-}
-
-bool IsFile(VString file){
-	HFILE fl = CreateFile(file, O_RDONLY, S_IREAD | S_IWRITE);
-	if(!ishandle(fl))
-		return 0;
-
-	CloseHandle(fl);
-	return 1;
 }
 
 unsigned int SaveFile(VString file, VString data){
@@ -444,6 +345,131 @@ unsigned int SaveFileAppend(VString file, VString data){
 
 	return wr;
 }
+
+int CopyFile(VString from, VString to){
+	MSVCORE_NORMALPATH(fbuf, from);
+	MSVCORE_NORMALPATH(tbuf, to);
+
+	sstat64 stt = GetFileInfo(fbuf);
+	if((stt.st_mode & S_IFDIR) != 0)
+		return 0;
+
+	sstat64 stt2 = GetFileInfo(tbuf);
+	if(stt.st_size == stt2.st_size && stt.st_ctime == stt2.st_ctime && stt.st_mtime == stt2.st_mtime)
+		return 1;
+
+	HFILE fl = CreateFile(fbuf, O_RDONLY, S_IREAD | S_IWRITE);
+	if(!ishandle(fl))
+		return 0;
+
+	HFILE fl2 = CreateFile(tbuf, O_CREAT | O_RDWR, S_IREAD | S_IWRITE);
+	if(!ishandle(fl2)){
+		CloseHandle(fl);
+		return 0;
+	}
+
+	// Set pointer
+	SetFilePointer(fl2, 0);
+
+	// 
+	unsigned char buf[S4K];
+	int ret = 1;
+
+	int64 sz = stt.st_size;
+
+	while(sz){
+		int rd = ReadFile(fl, buf, minel(sz, S4K));		
+		int wr = WriteFile(fl2, buf, rd);
+
+		if(sz && rd != wr){
+			ret = 0;
+			break;
+		}
+
+		sz -= rd;
+	}
+
+	if(ret)
+		SetFileTime(fl2, stt.st_ctime, stt.st_atime, stt.st_mtime);
+
+	// Set EOF
+	SetEndOfFile(fl2);
+
+	// Close
+	CloseHandle(fl);
+	CloseHandle(fl2);
+
+	return ret;
+}
+
+int MoveFile(VString from, VString to){
+	MSVCORE_NORMALPATH(fbuf, from);
+	MSVCORE_NORMALPATH(tbuf, to);
+
+	return !_rename(from, to);
+}
+
+int DeleteFile(VString file){
+	MSVCORE_NORMALPATH(buf, file);
+
+	return _unlink(file);
+}
+
+
+#ifdef WIN32
+FILETIME UnixTimeToWin(time_t time){
+	SYSTEMTIME SystemTime;
+	FILETIME LocalFileTime;
+	FILETIME ResultFileTime;
+
+	if(!time){
+		ResultFileTime.dwHighDateTime = 0;
+		ResultFileTime.dwLowDateTime = 0;
+		return ResultFileTime;
+	}
+
+	struct tm tmb;
+	_localtime64_s(&tmb, &time);
+
+	SystemTime.wYear   = (WORD)(tmb.tm_year + 1900);
+	SystemTime.wMonth  = (WORD)(tmb.tm_mon + 1);
+	SystemTime.wDay    = (WORD)(tmb.tm_mday);
+	SystemTime.wHour   = (WORD)(tmb.tm_hour);
+	SystemTime.wMinute = (WORD)(tmb.tm_min);
+	SystemTime.wSecond = (WORD)(tmb.tm_sec);
+	SystemTime.wMilliseconds = 0;
+
+	SystemTimeToFileTime(&SystemTime, &LocalFileTime);
+	LocalFileTimeToFileTime(&LocalFileTime, &ResultFileTime);
+
+	return ResultFileTime;
+}
+
+bool SetFileTime(HFILE fl, time_t ctime, time_t atime, time_t mtime){
+	FILETIME LocalFileTime = UnixTimeToWin(ctime);
+    FILETIME LastWriteTime = UnixTimeToWin(mtime);
+    FILETIME LastAccessTime = UnixTimeToWin(atime);
+
+	return SetFileTime((HANDLE)_get_osfhandle(fl), ctime ? &LocalFileTime : 0, atime ? &LastAccessTime : 0, mtime ? &LastWriteTime : 0) != 0;
+}
+
+#else // Linux
+	bool SetFileTime(HFILE fl, time_t ctime, time_t atime, time_t mtime){
+		//struct utimbuf tm;
+		//tm.actime = atime;
+		//tm.modtime = mtime;
+
+		struct timeval tv[2];
+		tv[0].tv_sec = atime;
+		tv[1].tv_sec = mtime;
+
+		tv[0].tv_usec = 0;
+		tv[1].tv_usec = 0;
+
+		return futimes(fl, tv);
+	}
+#endif
+
 
 class AHFILE{
 	HFILE hfile;
@@ -513,19 +539,114 @@ class Readdir{
 	LString ls;
 	IList<VSi> list;
 	//VSiLine line;
+
+#ifdef WIN32
+	HANDLE handle;
+#else
+	DIR *handle;
+#endif
+
+
 public:
 
-int Add(VString file, sstat64 &stt){
-	//if(line.size==line.asize()) line.Add(READDIRSZ);
-	//VString fn=file;
-	list.A();
-	list.n().key = ls.addnf(file);// .set(&ls.el(ls.addnf(file, file)), file);
-	list.n().stt = stt;
+	Readdir(){
+		handle = 0;
+	}
+
+	int Add(VString file, sstat64 &stt){
+		//if(line.size==line.asize()) line.Add(READDIRSZ);
+		//VString fn=file;
+		list.A();
+		list.n().key = ls.addnf(file);// .set(&ls.el(ls.addnf(file, file)), file);
+		list.n().stt = stt;
 	
-	list.Added();
-	//line.size++;
-	return list.Size();
-}
+		list.Added();
+		//line.size++;
+		return list.Size();
+	}
+
+	int OpenDir(VString &path){
+		VString file;
+		char buf[S4K];
+
+		if(path.size() > S4K - 4)
+			 return 0;
+
+		// Clean
+		Clean();
+
+		// Normal path
+		path.set(buf, normalpath(buf, S4K, path, path.size()));
+
+		// Win32
+		if(_TSYS == TSYS_WIN){
+			path.data[path.sz++] = '*';
+			path.data[path.sz++] = '.';
+			path.data[path.sz++] = '*';
+		}
+		path.data[path.sz]=0;
+
+		// Find
+	#ifdef WIN32
+		WIN32_FIND_DATA ff;
+		handle = FindFirstFile(MODUNICODE(path), &ff);
+	#else
+		handle = opendir(path ? path : "./");
+	#endif
+		if(!ishandle(handle))
+			return 0;
+
+#ifdef WIN32
+	#ifdef UNICODE // #unicode
+		MString fnuni = MODLPWSTR_R(ff.cFileName);
+		file = fnuni;
+	#else
+		file = MODLPWSTR(ff.cFileName); 
+	#endif // #e unicode
+
+		sstat64 stt;
+		memset(&stt, 0, sizeof(stt));
+		Add(file, stt);
+#endif
+
+		return 1;
+	}
+
+	VString ReadOne(SString &ss){
+		if(!ishandle(handle))
+			return "";
+
+		if(list.Size()){
+			ss.set(list[0].key);
+			list.Del(0);
+			return ss;
+		}
+
+		VString file;
+
+		while(1){
+#ifdef WIN32
+			WIN32_FIND_DATA ff;
+			if(!FindNextFile(handle, &ff)) 
+				return "";
+	#ifdef UNICODE // #unicode
+			MString fnuni = MODLPWSTR_R(ff.cFileName);
+			file = fnuni;
+	#else
+			file = MODLPWSTR(ff.cFileName); 
+	#endif // #e unicode
+			return ss.set(file);
+#else
+			struct dirent *dr = readdir(handle);
+			if(!dr)
+				return "";
+			file = dr->d_name;
+			return ss.set(file);
+#endif
+		}
+
+		return "";
+	}
 
 int ReadDir(MString dir){
 	ls.Clean(); list.Clear(); sstat64 stt; /*lsstat64 st;*/ VString path, fn; int fs=0; unsigned int pos;
@@ -633,10 +754,23 @@ return 1;
 		return list.Size();
 	}
 
-	int Clean(){
-		ls.Clean();
 
-		return 1;
+	void Clean(){
+		ls.Clean();
+		list.Clear();
+
+		if(ishandle(handle)){
+#ifdef WIN32
+			FindClose(handle);
+#else
+			closedir(handle);
+#endif
+			handle = 0;
+		}
+	}
+
+	~Readdir(){
+		Clean();
 	}
 
 };

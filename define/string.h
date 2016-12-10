@@ -212,7 +212,7 @@ LStringX<stacksize>& LStringX<stacksize>::operator+(LStringX& string){
 
 template<int stacksize>
 LStringX<stacksize>& LStringX<stacksize>::operator=(LStringX& string){
-	Clean();
+	LStringX::Clean();
 
 	for(unsigned int i = 0; i < string.Blocks(); i++){
 		int sz;
@@ -225,5 +225,5 @@ LStringX<stacksize>& LStringX<stacksize>::operator=(LStringX& string){
 
 //LString2& LString2::operator+(LString& lst){ add(lst.operator MString(), lst.size()); return *this; }
 
-typedef LStringX<S4K> LString;
+typedef LStringX<1> LString;
 typedef LStringX<1> LString0;

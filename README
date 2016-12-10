@@ -1,0 +1,51 @@
+// Msv Core Help //
+
+Virtual String - string pointer.
+class VString { public: unsigned char *data; unsigned int sz; };
+
+// Constructors
+VString() - constructor.
+VString(char *line) - null-terminated string.
+VString(char *line, int size) - pointer & string size.
+VString(VString line) - copy pointer.
+
+// Set
+set(char *line, int size) - set data.
+set(VString) - set data;
+
+// Operators
+operator!() - if(!size) return 1; else return 0;
+operator void*() - return data pointer.
+operator char*() - return data pointer.
+operator unsigned char*() - return data pointer.
+operator unsigned int() - return size;
+char operator[](int index) - return data[index];
+
+// Pointers
+char * rchar() - return data pointer.
+unsigned char * uchar() - return data pointer.
+char* pos(int p) - return data + p pointer.
+unsigned char* upos(int p) - return data + p pointer.
+char * end() - return end data pointer.
+unsigned char * endu() - return end data pointer.
+unsigned char endo()  - return last char.
+
+//
+bool is() - if(size) return 1; else return 0;
+bool isempty() - if(!size) return 1; else return 0;
+unsigned int size() - return size;
+int toi() - convert string to int;
+unsigned int toui() - convert string to unsigned int;
+int64 toi64() - convert string to int64;
+double tod() - convert string to double;
+
+// Part
+VString str(int pos) - return part line, from pos.
+VString str(int pos, int size) - return part line, from pos to pos + size.
+
+// Compare
+bool compare(char *line, int size) - compare string if(this.string == string) return 1; else return 0;
+bool compareu(char *line, int size) - compare string if(up(this.string) == up(string)) return 1; else return 0;
+bool compareu(VString line) - compare string if(up(this.string) == up(string)) return 1; else return 0;
+bool incompare(const VString &line) const;
+bool incompareu(const VString &line) const;

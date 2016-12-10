@@ -1,0 +1,16 @@
+<?msl
+
+// Project files
+$project['files'] = file_get_contents($project['name'].'/project.mfl');
+
+// Project files all
+$project['afiles'] = MashReadDir($project['name'].'/', '');
+
+// Library files
+//$project['sfiles'] .= "\r\n" . MashReadDir('msvcore2/', '');
+
+// Ignore
+$project['afiles'] = mash_files_ignore($project['afiles'], $project['ifiles']);
+
+
+?>
