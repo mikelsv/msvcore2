@@ -491,6 +491,7 @@ void msl_math_ops(int op, VString a, VString b, msl_value *ret){
 class msl_fl{
 	// result
 	LString output;
+	int opt_outcon;
 
 	// options
 	int do_opt, do_opt_stopit, do_opt_ifw, do_opt_cbr, do_opt_active;
@@ -537,12 +538,17 @@ class msl_fl{
 	// init
 	msl_fl(){
 		do_opt=0; do_opt_stopit=0; do_opt_cbr=0; local_value=&global_value; extfunc=0;
+		opt_outcon = 0;
 #ifdef MSL_FL_EXTFUNC_DEFAULT
 		extfunc = MSL_FL_EXTFUNC_DEFAULT;
 #endif	
 	}
 
 	~msl_fl(){	}
+
+	void OutToCon(int v = 1){
+		opt_outcon = v;
+	}
 	
 	void DoFile(VString file){
 		file_path = file;
@@ -2048,13 +2054,23 @@ protected:
 	// set output
 	void SetOutput(VString line){
 		// add line to result
-		output+line;
+
+		if(opt_outcon)
+			print(line);
+		else
+			output + line;
 		return ;
 	}
 
 	void SetWarning(VString line){
 		// add error line to result
 		output + "MSL-FL Warning: '" + line + "' in '" + file_path + "' on " + itos(_getlinecount() + 1) + " line " + itos(_getlinesz()) + " row\r\n";
+		
+		if(opt_outcon){
+			print(output);
+			output.Clean();
+		}
+
 		return ;
 	}
 
@@ -2063,6 +2079,11 @@ protected:
 		output + "MSL-FL Error: '" + line + "' in '" + file_path + "' on " + itos(_getlinecount() + 1) + " line " + itos(_getlinesz()) + " row\r\n";
 		// stop
 		do_opt_stopit = 1;
+
+		if(opt_outcon){
+			print(output);
+			output.Clean();
+		}
 		return ;
 	}
 
@@ -2071,6 +2092,11 @@ protected:
 		output + "MSL-FL Epic Fail: '" + line + "' in '" + file_path + "' on " + itos(_getlinecount() + 1) + " line " + itos(_getlinesz()) + " row\r\n";
 		// stop
 		do_opt_stopit = 1;
+
+		if(opt_outcon){
+			print(output);
+			output.Clean();
+		}
 		return ;
 	}
 

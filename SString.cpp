@@ -122,7 +122,7 @@ const SStringX<stacksize>& SStringX<stacksize>::operator=(const SStringX& line){
 
 // Set
 template<int stacksize>
-SStringX<stacksize>& SStringX<stacksize>::set(const VString line){ unsigned char *odata = data; sz = line.sz; StringNew(line); StringDel(odata); return *this; }
+SStringX<stacksize>& SStringX<stacksize>::set(const VString &line){ unsigned char *odata = data; sz = line.sz; StringNew(line); StringDel(odata); return *this; }
 
 template<int stacksize>
 SStringX<stacksize>& SStringX<stacksize>::set(const char* line, const unsigned int size){ unsigned char *odata = data; sz = size;  StringNew(line); StringDel(odata); return *this; }

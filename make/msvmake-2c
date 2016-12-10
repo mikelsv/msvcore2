@@ -59,7 +59,7 @@ ${PROJECTNAME}: ${PROJECTNAME}.o
 ${PROJECTNAME}.o: ${PROJECTNAME}.cpp #${LDLIBSOPTIONS}
 	${MKDIR} -p ${OBJECTDIR}
 	for x in ${COMPILEFILES}; do $(COMPILE.cc) ${MSVDFLAGS} -o ${OBJECTDIR}/$${x##*/}.o $$x.cpp 2>&1 \
-| sed "s/ошибка:/error:"/g > ${OBJECTDIR}/out; \
+| sed "s/ошибка:/error:"/g | sed "s/������:/error:"/g > ${OBJECTDIR}/out; \
 echo -n "Errors: [1;31m"; grep 'error:' ${OBJECTDIR}/out; echo -n "[0m"; \
 echo -n "[0;31m"; grep 'Нет такого файла' ${OBJECTDIR}/out; echo "[0m"; \
 echo -n "Errors: [1;31m" ; grep 'error:' ${OBJECTDIR}/out | wc -l | tr -d "\n" ; \

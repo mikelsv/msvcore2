@@ -70,6 +70,30 @@ public:
 	int file_put_contents(VString path, VString data){
 		return SaveFile(path, data);
 	}
+
+	int pathinfo(VString path, msl_value &val){
+		ILink link(path);
+		val.Set("dirname", link.path);
+		val.Set("basename", link.file);
+		val.Set("extension", link.ext());
+		val.Set("filename", link.name());
+		return 1;
+	}
+
+	int mkdir(VString path){
+		return MkDir(path);
+	}
+
+	MString exec(VString cmd, int &rc){
+		PipeLine ppl;
+
+		LString hls, ehls;
+		//int rc;
+
+		int ret = ppl.Run(cmd, rc, hls, ehls, 0);
+
+		return (VString)hls;
+	}
 	
 	virtual int DoCodeFunctionExec(VString name, msl_fl_fargs &args, msl_value &val){
 		if(name == "opendir" && args.Sz() == 1){
@@ -102,6 +126,21 @@ public:
 
 		else if(name == "copy" && args.Sz() == 2){
 			val.val = itos(CopyFile(args[0].val.val, args[1].val.val));
+		}
+
+		else if(name == "pathinfo" && args.Sz() == 1){
+			pathinfo(args[0].val.val, val);
+		}
+
+		else if(name == "mkdir" && args.Sz() == 1){
+			val.val = itos(mkdir(args[0].val.val));
+		}
+
+		else if(name == "exec" && args.Sz() == 2){
+			int rc;
+			val.val = exec(args[0].val.val, rc);
+			if(args[1].pval)
+				args[1].pval->val = itos(rc);
 		}
 
 		else

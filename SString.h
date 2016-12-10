@@ -47,7 +47,7 @@ public:
 	const SStringX& operator=(const SStringX& line);
 	//const SString& operator=(const MString& line);
 
-	SStringX& set(const VString line);
+	SStringX& set(const VString& line);
 	SStringX& set(const char* line, const unsigned int size);
 	SStringX& set(const unsigned char* line, const unsigned int size);
 	SStringX& setu(const unsigned char* line, const unsigned int size);

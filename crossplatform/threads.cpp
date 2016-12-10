@@ -135,7 +135,10 @@ MSVCOT*cot;
 
 class MSVCOT{
 protected:
-	MSVCOT(){ cottid=0; }
+	MSVCOT(){
+		cottid=0;
+		cotuse = 0;
+	}
 public:
 	DWORD cottid, cotuse;
 
@@ -146,7 +149,11 @@ public:
 	}
 
 	void StopCot(){
-		if(cottid) cotuse=0; while(cottid) Sleep(2);
+		if(cottid)
+			cotuse=0;
+		
+		while(cottid)
+			Sleep(2);
 	}
 
 	//void KillCot(int wl=20){

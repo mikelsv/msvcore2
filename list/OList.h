@@ -64,7 +64,7 @@ public:
 		return *this;
 	}
 
-#if __cplusplus >= 201103L || WIN32
+#if __cplusplus >= 201103L || WIN32 && !__GNUC__
 	OListJ(OListJ &&j){
 		olist = j.olist;
 		el = j.el;

@@ -191,8 +191,12 @@ return path.str(0, ret-path.uchar());
 	inline int fileeof(HFILE hfile){ return chsize64(hfile, tell64(hfile)); }
 	int _open(char* file, int op, int pm){
 		int fl = 0;
+#ifndef __GNUC__
 		if(!_sopen_s(&fl, file, op, 0x40, pm)) // _SH_DENYNO
 			return fl;
+#else
+	return open(file, op, pm);
+#endif
 		//return fl = _open(
 		return -1;
 	}
@@ -429,7 +433,13 @@ FILETIME UnixTimeToWin(time_t time){
 	}
 
 	struct tm tmb;
+#ifndef __GNUC__
 	_localtime64_s(&tmb, &time);
+#else
+	struct tm *tmp = localtime(&time);
+	if(tmp)
+		tmb = *tmp;
+#endif
 
 	SystemTime.wYear   = (WORD)(tmb.tm_year + 1900);
 	SystemTime.wMonth  = (WORD)(tmb.tm_mon + 1);
@@ -590,11 +600,16 @@ public:
 	#ifdef WIN32
 		WIN32_FIND_DATA ff;
 		handle = FindFirstFile(MODUNICODE(path), &ff);
+		if(!ishandle(handle)){
+			handle = 0;
+			return 0;
+		}
 	#else
 		handle = opendir(path ? path : "./");
-	#endif
-		if(!ishandle(handle))
+		if(!handle)
 			return 0;
+	#endif
+
 
 #ifdef WIN32
 	#ifdef UNICODE // #unicode
@@ -613,7 +628,7 @@ public:
 	}
 
 	VString ReadOne(SString &ss){
-		if(!ishandle(handle))
+		if(!handle)
 			return "";
 
 		if(list.Size()){
@@ -759,7 +774,7 @@ return 1;
 		ls.Clean();
 		list.Clear();
 
-		if(ishandle(handle)){
+		if(handle){
 #ifdef WIN32
 			FindClose(handle);
 #else

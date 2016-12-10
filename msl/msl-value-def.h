@@ -225,7 +225,7 @@ public:
 	}
 
 	msl_value_template* Set(VString key, int64 val){
-		Itos it;
+		SString it;
 		return Set(key, it.itos(val));
 	}
 
@@ -275,7 +275,7 @@ public:
 
 	msl_value_template* Add(VString key, int64 val){
 		msl_value_template *p = New();
-		Itos it;
+		SString it;
 		p->BaseSetKeyVal(key, it.itos(val));
 		return p;
 	}

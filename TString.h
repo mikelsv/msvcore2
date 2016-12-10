@@ -34,7 +34,7 @@ public:
 	//TString(const MString &line);
 	TString(const TString &line);
 
-#if __cplusplus >= 201103L || WIN32
+#if __cplusplus >= 201103L || WIN32 && !__GNUC__
 	TString(TString &&line);
 #endif
 

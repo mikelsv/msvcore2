@@ -18,6 +18,7 @@ public:
 
 private:
 	ILink(const ILink &ilink);
+	ILink& operator=(const ILink &ilink);
 
 public:
 

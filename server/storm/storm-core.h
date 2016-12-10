@@ -293,6 +293,11 @@ public:
 struct storm_socket_block{
 	storm_socket_data data[STORMSERVER_SOCKETBLOCK_SZ];
 	storm_socket_block *next;
+
+	storm_socket_block(){
+		next = 0;
+		memset(data, 0, sizeof(data));
+	}
 };
 
 
@@ -477,7 +482,7 @@ public:
 			else
 				d = d->next = new storm_socket_block;
 
-			memset(d, 0, sizeof(d));
+			//memset(d, 0, sizeof(d));
 
 			for(int i = STORMSERVER_SOCKETBLOCK_SZ - 1; i >= 0; i--){
 				d->data[i].next = socket_free;

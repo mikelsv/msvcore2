@@ -78,7 +78,7 @@ public:
 #ifdef WIN32
 		if(isprocess) EndProcess();
 #else
-		int rc; HLString hls, ehls;
+		int rc; LString hls, ehls;
 		if(isprocess) EndProcess(rc, hls, ehls, 0);
 #endif
 	}
@@ -249,7 +249,7 @@ write(p_stdret[1], &ru.ru_utime, sizeof(struct timeval)*2);
 	return 1;
 }
 
-int Process(int &rc, HLString &hls, HLString &ehls, int tocon=1){
+int Process(int &rc, LString &hls, LString &ehls, int tocon=1){
 	if(!isprocess) return 0;
 
 	//char buf[S4K]; int rbufi=1, ebufi=1;
@@ -309,7 +309,7 @@ int Process(int &rc, HLString &hls, HLString &ehls, int tocon=1){
 	return EndProcess(rc, hls, ehls, tocon);
 }
 
-int EndProcess(int &rc, HLString &hls, HLString &ehls, int tocon=1){
+int EndProcess(int &rc, LString &hls, LString &ehls, int tocon=1){
 	if(!isprocess) return 0;
 	fd_set rfds, efds; timeval tm; int sel, maxs=0;
 	int ebufi;

@@ -91,6 +91,11 @@ ILink::ILink(const ILink &ilink){
 	Clean();
 }
 
+ILink& ILink::operator=(const ILink &ilink){
+	Clean();
+	return *this;
+}
+
 ILink::~ILink(){ }
 
 void ILink::Link(const VString ilink, int tp){// 0 sel, 1 - web, 2 -local

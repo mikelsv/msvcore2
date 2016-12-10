@@ -38,7 +38,7 @@ public:
 		data=&d;
 		buff=abuff=b;
 
-		if(!data || data->sz + read.sz > buff)
+		if(/*!data ||*/ data->sz + read.sz > buff)
 			return 0;
 
 		memcpy(buff, data->data, data->sz);

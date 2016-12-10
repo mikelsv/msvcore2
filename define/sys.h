@@ -17,12 +17,18 @@
 
 // OS Include
 #ifdef WIN32 // Win32 include
+	#ifdef __GNUC__
+		#define _WIN32_WINNT  0x501
+
+	#endif
+
 	#include <direct.h>
 	#include <winsock2.h>
 	#include <windows.h>	
 	#include <ws2tcpip.h>
 
 	#define S_IFLNK 0xC000
+#ifndef __GNUC__
 	#define S_IRUSR 0x0100
 	#define S_IWUSR 0x0080
 	#define S_IXUSR 0x0040
@@ -32,6 +38,7 @@
 	#define S_IROTH 0x0004
 	#define S_IWOTH 0x0002
 	#define S_IXOTH 0x0001
+#endif
 
 	typedef __int64 int64;
 	typedef unsigned __int64 uint64;

@@ -284,7 +284,7 @@ bool isip(const char*line, unsigned int size){
 	return 1;
 }
 
-bool isip(const VString line){ return isip((char*)line.data, line.sz); }
+bool isip(const VString &line){ return isip((char*)line.data, line.sz); }
 
 unsigned int GetIPh(VString ipa){
 	if(!ipa || ipa.sz >= S2K-1)
@@ -405,7 +405,7 @@ MString ip6itos(IP6_ADDRESS ip){ // 1:2:3:4:5:6:7:8
 		if(mp==i){ i+=mn-1; continue; }
 
 		unsigned char b, s=0;
-		b=*i>>12;	if(b || s){ if(b<10) *l++='0'+b; else *l++=87+b; s=1; }
+		b=*i>>12;	if(b /*|| s*/){ if(b<10) *l++='0'+b; else *l++=87+b; s=1; }
 		b=*i>>8&15; if(b || s){ if(b<10) *l++='0'+b; else *l++=87+b; s=1; }
 		b=*i>>4&15;	if(b || s){	if(b<10) *l++='0'+b; else *l++=87+b; s=1; }
 		b=*i&15;	if(b<10) *l++='0'+b; else *l++=87+b;
