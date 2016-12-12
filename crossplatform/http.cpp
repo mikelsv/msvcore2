@@ -646,7 +646,7 @@ protected:
 		ls+" "+il.GetPathFileQuest()+" HTTP/1.0\r\n";
 		
 			ls+"Host: "+il.domain+"\r\n";
-		if(!minimal){			
+		if(!minimal){
 			//ls+"User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/21.0\r\n";
 			
 			ls + "User-Agent: ";

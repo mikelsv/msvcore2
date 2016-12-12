@@ -92,15 +92,18 @@ MsvCoreState::MsvCoreState(){
 	procupped = (unsigned int)time(0);
 }
 
-void MsvCoreState::Main(int args, char* arg[]){
+void MsvCoreState::Main(int args, char* argv[]){
 	char bpath[S8K];
 	LString cmd;
+
+	this->args = args;
+	this->argv = argv;
 		
 	if(args)
-		cmd + VString(arg[0]) + "?";
+		cmd + VString(argv[0]) + "?";
 
 	for(int i = 1; i < args; i ++)
-		cmd + VString(arg[i]) + (i + 1 < args ? (" ") : (""));	
+		cmd + VString(argv[i]) + (i + 1 < args ? (" ") : (""));	
 
 	link.Link((VString)cmd);
 

@@ -94,6 +94,18 @@ public:
 
 		return (VString)hls;
 	}
+
+	MString uniqid(){
+		MString ret;
+		ret.Reserve(32);
+
+		srand(time());
+
+		for(int i = 0; i < 32 ; i ++)
+			* (ret.data + i) = cb16[rand() % 62];
+
+		return ret;
+	}
 	
 	virtual int DoCodeFunctionExec(VString name, msl_fl_fargs &args, msl_value &val){
 		if(name == "opendir" && args.Sz() == 1){
@@ -141,6 +153,10 @@ public:
 			val.val = exec(args[0].val.val, rc);
 			if(args[1].pval)
 				args[1].pval->val = itos(rc);
+		}
+
+		else if(name == "uniqid" && args.Sz() == 0){
+			val.val = uniqid();
 		}
 
 		else

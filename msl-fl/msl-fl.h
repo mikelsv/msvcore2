@@ -41,6 +41,10 @@ int msl_value_test_count;
 #define msl_value msl_value_template<msl_value_base>
 
 
+#ifdef USEMSV_XDATACONT
+	void JsonToMsl(XDataEl *el, msl_value &val, int clear = 1);
+#endif
+
 
 // Function Arguments
 class msl_fl_farg{
@@ -1287,7 +1291,14 @@ class msl_fl{
 			do_opt_active=old_active && old_ifw==1;
 			// do else{ code }
 			if(*(line)=='{'){ endcode='}'; line++; } else endcode=';';
-			DoCodeMulti(line, to, val, endcode); if(endcode!=';') line++;
+
+			if(line + 3 < to && *line =='i' && *(line + 1) == 'f' && ( *(line + 2) == '(' || 
+				!(*(line + 2) >= 'a' && *(line + 2) <= 'z' || *(line + 2) >= 'A' && *(line + 2) <= 'Z' || *(line + 2) >= '0' && *(line + 2) <= '9' || *(line + 2) == '_') )){
+					int df;
+					DoCodeFunction(line, to, val, df);
+			} else{
+				DoCodeMulti(line, to, val, endcode); if(endcode!=';') line++;
+			}
 		}
 		else if(endcode==';') line=pline;
 
@@ -1504,6 +1515,7 @@ class msl_fl{
 				_skipspace(line, to);
 				if(line<to && *line=='='){
 					def_value=1; line++; val.Clean();
+					_skipspace(line, to);
 
 					if(_skipnum(line, to, val)){ }
 					else if(_skipquote(line, to, val)){ line++; }
@@ -1621,9 +1633,9 @@ class msl_fl{
 	}
 
 	int _skipnum(unsigned char *&line, unsigned char *to, VString &val){
-		if(line<to && *line>'0' && *line<'9'){
+		if(line<to && *line>='0' && *line<='9'){
 			val.data=line;
-			while(line<to && *line>'0' && *line<'9') line++;
+			while(line<to && *line>='0' && *line<='9') line++;
 			val.sz=line-val.data;
 			return 1;
 		}
@@ -1947,6 +1959,12 @@ class msl_fl{
 			}
 		}
 
+		// json_decode
+		else if(name == "json_decode" && args.Sz() == 1){
+			XDataCont ct(args[0].val.val);
+			JsonToMsl(ct, val);
+		}
+
 		// replace
 		else if(name=="str_replace" && args.Sz()==3){
 			val.val = Replace(args[2].val.val, args[0].val.val, args[1].val.val);
@@ -2104,7 +2122,7 @@ protected:
 
 #ifdef USEMSV_XDATACONT
 
-void JsonToMsl(XDataEl *el, msl_value &val, int clear=1){
+void JsonToMsl(XDataEl *el, msl_value &val, int clear){
 	if(clear)
 		val.Clear();
 
@@ -2205,7 +2223,7 @@ void JsonToMsl(XDataEl *el, msl_value_template<B> &val, int clear = 1){
 		val.Clear();
 
 	int i = 0;
-	Itos it;
+	SString it;
 	el = el->a();
 	
 	while(el){
@@ -2319,7 +2337,7 @@ TString GetLine(msl_value_template<B> &val){
 		return TString();
 
 	TString ret;
-	ret.Reserv(GetLineCount(val));
+	ret.Reserve(GetLineCount(val));
 
 	GetLine(val, ret);
 
@@ -2330,7 +2348,7 @@ TString GetLine(msl_value_template<B> &val){
 }
 
 template<class B>
-void GetLineL(msl_value_template<B> &val, HLString &ls){
+void GetLineL(msl_value_template<B> &val, LString &ls){
 	int a = val.a() != 0 && val.a()->k(), f = 1;
 	if(a)
 		ls + "{";
@@ -2372,7 +2390,7 @@ TString GetLinePost(msl_value_template<B> &val){
 	if(!val._a)
 		return TString();
 
-	HLString ls;
+	LString ls;
 
 	msl_value_template<B> *p = val._a;
 	while(p){

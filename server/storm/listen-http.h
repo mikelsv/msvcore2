@@ -438,13 +438,13 @@ protected:
 					if(opt->val == "%{REQUEST_FILENAME} !-s"){
 						// badcode
 						ILink ilink;
-						Itos it;						
+						SString it;
 						it = url;
 
 		if(rootpath[0] != '/' && rootpath[1] != ':' && rootpath[0] != '\\'){
-			ilink.Link(it2.Add(_procpath, "/", rootpath, "/", NormalPath(it)), 1);
+			ilink.Link(it2.Add(msvcorestate.procpath, "/", rootpath, "/", NormalHttpPath(it)), 1);
 		} else{
-			ilink.Link(it2.Add(rootpath, "/", NormalPath(it)), 1);
+			ilink.Link(it2.Add(rootpath, "/", NormalHttpPath(it)), 1);
 		}
 
 		stt = GetFileInfo(ilink.GetPathFile());
@@ -466,7 +466,7 @@ protected:
 				VString rule, result, options;
 				int perrcode; size_t erroffset;
 				int opt_l = 0, opt_qsa = 0;
-				int arr[255];
+//				int arr[255];
 
 				VString rurl = ilink.GetPathFile().str(1);
 				rule = PartLine(opt->val, result, " ");
@@ -493,7 +493,7 @@ protected:
 						}
 					}
 
-					it.Reserv(prmf_pcre_result(0, 0, result, result, rurl, rule, ovector, f, opt_qsa, ilink.iquest));
+					it.Reserve(prmf_pcre_result(0, 0, result, result, rurl, rule, ovector, f, opt_qsa, ilink.iquest));
 					prmf_pcre_result(it, it, result, result, rurl, rule, ovector, f, opt_qsa, ilink.iquest);
 					ilink.Link(url = it);
 				}

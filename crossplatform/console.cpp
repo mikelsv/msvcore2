@@ -406,7 +406,7 @@ int Run(MString cmd, int &rc, LString &hls, LString &ehls, int tocon=1){
 
 	if(!CreateProcess(NULL, MODUNICODE(cmd), NULL, NULL, TRUE, CREATE_NEW_CONSOLE, env, MODUNICODE(opt_dir), &si, &pi)){
 		//il.GetPath()+il.file, il.iquest
-		ErrorMessage("CreateProcess");
+		//ErrorMessage("CreateProcess");
 		//getch();
 		CloseHandle(newstdin);
 		CloseHandle(newstdout);

@@ -7,6 +7,10 @@ public:
 	// Process upped
 	unsigned int procupped;
 
+	// Process arguments
+	char **argv;
+	int args;
+
 	// Windows path
 	MString winpath;
 
@@ -227,3 +231,4 @@ LStringX<stacksize>& LStringX<stacksize>::operator=(LStringX& string){
 
 typedef LStringX<1> LString;
 typedef LStringX<1> LString0;
+typedef LStringX<S4K> LStringS;
