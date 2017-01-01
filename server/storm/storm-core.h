@@ -83,7 +83,7 @@ public:
 	//virtual void rain_setcore(RainCore *c){ core=c; }
 	virtual void storm_init(){}
 	virtual void storm_start(){}
-	virtual void storm_stop(){}
+	virtual void storm_stop(){} 
 
 	// Socket
 	//virtual void storm_setcip(unsigned int ip, unsigned short port){}
@@ -101,7 +101,7 @@ public:
 	}
 
 	// Work
-	virtual void storm_work(storm_work_el &wel){};
+	//virtual void storm_work(storm_work_el &wel){};
 	//virtual void rain_recv(rain_work_el &wel, unsigned char*rdata, int rsz){}
 	virtual void storm_recv(storm_work_el &wel, VString read){}
 	virtual int storm_send(storm_work_el &wel, VString send){ return 0; }
@@ -215,6 +215,10 @@ public:
 		core = 0;
 		data = 0;
 		sock = 0;
+	}
+
+	~storm_socket(){
+		Clean();
 	}
 
 	void set(StormCoreVirtual *core, storm_socket_data *data){
@@ -512,7 +516,7 @@ public:
 		//d->cl = 0; d->rd = 0; d->wr = 0;
 
 #ifdef STORMSERVER_PRINT_ADD
-		Itos it;
+		SString it;
 		print(it.Format("Storm Add(%d). Sockets:%d. Void: 0x%h\r\n", data->sock, sockets_count + 1, (unsigned long)data));
 #endif
 
@@ -545,7 +549,7 @@ public:
 		sockets_count--;
 
 #ifdef STORMSERVER_PRINT_DEL
-		Itos it;
+		SString it;
 		print(it.Format("Storm Del(%d). Sockets:%d. Void: 0x%h\r\n", sdata->sock, sockets_count, (unsigned long)sdata));
 #endif
 
@@ -630,15 +634,28 @@ public:
 		if(sdata->sock != sock || sdata->unkid != unkid)
 			return 0;
 
+#ifdef STORMSERVER_PRINT_SENDIT
+				SString it;
+	#ifndef STORMSERVER_PRINT_SENDIT_DATA
+				print(it.Format("WorkDo(%d) a_send_it %d\r\n", sdata->sock, line.sz));
+	#else
+				print(it.Format("===== WorkDo(%d) a_send_it %d\r\n%s===== End ====\r\n\r\n", el->sock, rsz, Replace(line, "\7", ".")));
+	#endif
+#endif
+
 //#ifdef STORMSERVER_POLL_EPOLL
 		if(!sdata->sd.Size() && ifsend(sdata->sock)){
 			int sd = sdata->item->storm_socket_send(sdata->sock, line, line, 0);
 			listen_http_modstate.OnSend(sd);
 			//print(HLString() + "S(" + data->sock + "): " + sd + "/" + line.sz + "\r\n");
-					
+
 #ifdef STORMSERVER_PRINT_SEND
-				Itos it;
-				print(it.Format("WorkDo(%d) a_send %d / %d\r\n", el->sock, rd, line.sz));
+			SString it;
+	#ifndef STORMSERVER_PRINT_SEND_DATA
+			print(it.Format("WorkDo(%d) a_send_c %d / %d\r\n", sdata->sock, sd, line.sz));
+	#else
+			print(it.Format("===== WorkDo(%d) a_send_c %d\r\n%s===== End ====\r\n\r\n", sdata->sock, sd, Replace(line, "\7", ".")));
+	#endif
 #endif
 
 			if(sd > 0){
@@ -1216,8 +1233,12 @@ public:
 				listen_http_modstate.OnRecv(rsz);
 
 #ifdef STORMSERVER_PRINT_RECV
-				Itos it;
+				SString it;
+#ifndef STORMSERVER_PRINT_RECV_DATA
 				print(it.Format("WorkDo(%d) a_recv %d\r\n", el->sock, rsz));
+#else
+				print(it.Format("===== WorkDo(%d) a_recv_data %d\r\n%s===== End ====\r\n\r\n", el->sock, rsz, Replace(VString((char*)fbuf, rsz), "\7", ".")));
+#endif
 #endif
 				if(rsz>0)
 					lot.Add(rsz);
@@ -1251,9 +1272,14 @@ public:
 				listen_http_modstate.OnSend(sd);
 
 #ifdef STORMSERVER_PRINT_SEND
-				Itos it;
-				print(it.Format("WorkDo(%d) a_send %d / %d\r\n", el->sock, sd, rd));
+				SString it;
+	#ifndef STORMSERVER_PRINT_SEND_DATA
+				print(it.Format("WorkDo(%d) a_send_c %d / %d\r\n", el->sock, sd, rd));
+	#else
+				print(it.Format("===== WorkDo(%d) a_send  %d / %d\r\n%s===== End ====\r\n\r\n", el->sock, sd, rd, Replace(VString((char*)buff, rd), "\7", ".")));
+	#endif
 #endif
+
 				if(sd > 0){
 					el->sd.Del(sd);
 					//if(el->sd.Size())
@@ -1276,12 +1302,15 @@ public:
 			listen_http_modstate.OnSend(sd);
 
 #ifdef STORMSERVER_PRINT_SEND
-				Itos it;
+				SString it;
 				print(it.Format("WorkDo(%d) a_send2 %d / %d\r\n", el->sock, rd, sd));
 #endif
 
-			if(sd <= 0)
+			if(sd <= 0 && sd != OPENSSL_RECV_WAIT)
 				return 0;
+
+			if(sd < 0)
+				sd = 0;
 			
 			if(sd != rd)
 				el->sd.Set(buff + sd, rd - sd);
@@ -1377,49 +1406,3 @@ public:
 #endif
 
 };
-
-void storm_work_el::send(VString line){
-	if(!line)
-		return ;
-
-	int sd = item->storm_socket_send(data->sock, line, line, 0);
-	listen_http_modstate.OnSend(sd);
-
-	if(sd > 0){
-		line.data += sd;
-		line.sz -= sd;
-	}
-
-	if(line)
-		data->send(line);
-
-	data->wr = 0;
-
-	return ;
-}
-
-void storm_work_el::send(const char *line, unsigned int sz){
-	return send(VString(line, sz));
-}
-
-void storm_work_el::gettip(unsigned int &ip, unsigned short &port){
-	sockaddr_in from; int fromlen = sizeof(from);
-
-	getsockname(data->sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
-
-	ip = ntohl(from.sin_addr.s_addr);
-	port = htons(from.sin_port);
-}
-
-void storm_work_el::getcip(unsigned int &ip, unsigned short &port){
-	sockaddr_in from; int fromlen = sizeof(from);
-
-	getpeername(data->sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
-
-	ip = ntohl(from.sin_addr.s_addr);
-	port = htons(from.sin_port);
-}
-
-SOCKET storm_work_el::getsock(){
-	return data ? data->sock : 0;
-}

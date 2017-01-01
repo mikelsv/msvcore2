@@ -115,6 +115,3 @@ public:
 	void UnLock();
 	~ALock();
 };
-
-
-

@@ -44,7 +44,6 @@
 extern int _TSYS;
 // ~ This System
 
-
 // WINCE & UNICODE
 #ifdef WINCE
 #include "crossplatform/wince-twoms.cpp"
@@ -82,9 +81,6 @@ extern int _TSYS;
 #endif
 
 
-#define msvcorenew(a, b) a = (b*) malloc(sizeof(b)); new(a)b;
-#define msvcoredelete(a, b) a->~b(); free(a);
-
 // bits operation
 #define divur(a, b) (a/b+(a%b)>0)
 #define reval(a, b) {a^=b; b^=a; a^=b;}
@@ -96,7 +92,6 @@ extern int _TSYS;
 #define isnumdh(val) (((unsigned char)val < 48 || (unsigned char)val > 57) && ((unsigned char)val < 'a' || (unsigned char)val > 'z' ) ? 0 : 1)
 inline unsigned char lowd(const unsigned char ch){ return ((ch>=65 && ch<=90 || ch>=192 && ch<=223) ? ch+32 : ch); }
 inline unsigned char upd(const unsigned char ch){ return ((ch>=97 && ch<=122 ||  ch>=224) ? ch-32 : ch); }
-
 
 // handle
 #define IsHandle(h) ((h) && ((int)h)!=-1)
@@ -160,7 +155,6 @@ typedef struct {
 int globalerror();
 int globalerror(const char*line);
 
-
 // Time
 unsigned int time();
 timeb alltime();
@@ -171,3 +165,33 @@ int64 sectime();
 // Data //
 static const char cb16[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/";
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+#ifdef USEMSV_MEMORYCONTROL
+#include "memcon.h"
+#endif
+
+#ifdef USEMSV_MEMORYCONTROL_X
+	#include <typeinfo>
+
+	#ifdef WIN32
+		#include "DbgHelp.h"
+		#include <WinBase.h>
+		#pragma comment(lib, "Dbghelp.lib")
+	#endif
+
+	void* msvcore_memcon_malloc2(int tid, void *t, const char *name, int size, int mallocsize);
+	void msvcore_memcon_free2(int tid, void *t, const char *name, int size, void *freev);
+
+	#ifndef USEMSV_MSVCORE
+		#define malloc(v) msvcore_memcon_malloc2(typeid(*this).hash_code(), this, typeid(*this).name(), sizeof(*this), v)
+		#define free(v) msvcore_memcon_free2(typeid(*this).hash_code(), this, typeid(*this).name(), sizeof(*this), v)
+
+		void* operator new(size_t sz);
+		void operator delete(void * p);
+	#endif
+#endif
+
+
+// New
+#define msvcorenew(a, b) a = (b*) malloc(sizeof(b)); new(a)b;
+#define msvcoredelete(a, b) a->~b(); free(a);

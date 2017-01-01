@@ -52,6 +52,7 @@ inline int print(const VString &l1, const VString &l2, const VString &l3, const 
 
 int normalpath(char*file, int asz, char *in, int ins, bool r=0, int opt=0);
 
+VString NormalHttpPath(VString path);
 
 // File functions
 HFILE CreateFile(VString file, int op, int pm);

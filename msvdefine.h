@@ -13,6 +13,9 @@
 // Include Lock
 #include "crossplatform/lock.h"
 
+// Include Threads
+#include "crossplatform/threads.h"
+
 // Include Real Strings
 #include "MString.h"
 
@@ -36,6 +39,12 @@
 // Include String Defines
 #include "define/string.h"
 
+// Include Network
+#include "crossplatform/net.h"
+
+// Include Send & Recv
+#include "crossplatform/send.h"
+
 // Include Config Line Options
 #include "crossplatform/conflineops.h"
 
@@ -44,3 +53,8 @@
 
 // Include I/O
 #include "crossplatform/io.h"
+
+
+
+// Msv core main
+int msvcoremain(int args, char* arg[], char* env[]);

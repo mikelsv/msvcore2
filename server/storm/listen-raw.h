@@ -8,4 +8,6 @@ class listen_raw : public storm_item{
 	STORM_DEFINE_NEW_DELETE(listen_raw);
 };
 
-STORM_DEFINE_NEW_DELETE_OK(listen_raw);
+#ifdef USEMSV_MSVCORE
+	STORM_DEFINE_NEW_DELETE_OK(listen_raw);
+#endif

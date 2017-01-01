@@ -1,21 +1,3 @@
-typedef DWORD (*LPTHREAD_METHOD)(LPVOID pParam);
-
-#ifdef USEMSV_TUPLE
-#ifndef USEMSV_ANDROID
-typedef DWORD (*LPTHREAD_METHOD_T)(MTuple &_tuple);
-#endif
-#endif
-
-// Статическая функция, которая запустит метод.
-//static  DWORD StartFunc (LPSTARTUP_PARAM pStartup);
-
-// Структура параметров для статической функции.
-typedef struct STARTUP_PARAM {
-    LPTHREAD_METHOD		pMethod;
-    LPVOID				pParam;
-	HANDLE				hdl;
-} *LPSTARTUP_PARAM;
-
 DWORD StartFunc(LPSTARTUP_PARAM pStartup){
 	// Распаковываем данные в новом потоке.
 	LPTHREAD_METHOD pMethod	= pStartup->pMethod;
@@ -39,16 +21,12 @@ _msvps_thread_is--;
     return dwResult;
 }
 
-#ifndef WIN32
-//#include "pthread.h"
-#define LPSECURITY_ATTRIBUTES pthread_attr_t*
-#endif
 
-HANDLE StartThread(LPTHREAD_METHOD pMethod, LPVOID pParam=0, LPDWORD pdwThreadID=0, const LPSECURITY_ATTRIBUTES pSecurity=0, DWORD dwStackSize=0, DWORD dwFlags=0){
+HANDLE StartThread(LPTHREAD_METHOD pMethod, LPVOID pParam, LPDWORD pdwThreadID, const LPSECURITY_ATTRIBUTES pSecurity, DWORD dwStackSize, DWORD dwFlags){
     // Создаем структуру и упаковываем данные для статической функции.
     LPSTARTUP_PARAM pStartup = new STARTUP_PARAM;
     pStartup->pMethod	= pMethod;
-    pStartup->pParam	= pParam;
+    pStartup->pParam 	= pParam;
 
     // Создаем новый поток.
 #ifdef WIN32
@@ -63,7 +41,6 @@ HANDLE StartThread(LPTHREAD_METHOD pMethod, LPVOID pParam=0, LPDWORD pdwThreadID
 	return 0;
 #endif
 }
-
 
 #ifdef USEMSV_TUPLE
 #ifndef USEMSV_ANDROID
@@ -123,70 +100,54 @@ HANDLE StartThreadT(LPTHREAD_METHOD_T pMethod, MTuple &pParam, LPDWORD pdwThread
 
 
 
-// COT
-class MSVCOT;
+// COT: Class One Thread
+// MSVCOT class //
+MSVCOT::MSVCOT(){
+	cottid=0;
+	cotuse = 0;
+}
 
-DWORD MSVCOT_RunCot(LPVOID lp);
+// run in class for memory control, dont use this functions
+MSVCOT::MSVCOT(unsigned short u){ cottid=0; }
 
-struct MSVCOTD{
-LPVOID lp;
-MSVCOT*cot;
-};
+DWORD MSVCOT::COT(LPVOID lp){
+	//while(cotuse) Sleep(1);
+	return 0;
+}
 
-class MSVCOT{
-protected:
-	MSVCOT(){
-		cottid=0;
+//void KillCot(int wl=20){
+//	DWORD ct=cottid;
+//	if(cottid && cottid!=0xdeaddead) cottid=0xdeaddead;
+//	if(cottid) Sleep(wl);
+//	if(cottid) KillThread(ct);
+//}
+
+int MSVCOT::COTS(LPVOID lp){
+	MSVCOTD *cot; // new MSVCOTD;
+	msvcorenew(cot, MSVCOTD);
+	cot->cot = this; cot->lp = lp;
+	StopCot(); cot->cot->cotuse = 1;
+	StartThread(::MSVCOT_RunCot, cot, &cottid, 0, 0, 0);
+return 1;
+}
+
+DWORD MSVCOT::MSVCOT_RunCot(LPVOID lp){
+	MSVCOTD *cot = (MSVCOTD*)lp;
+	cot->cot->COT(cot->lp);
+	cot->cot->cottid = 0;
+	//delete cot;
+	msvcoredelete(cot, MSVCOTD);
+	return 0;
+}
+
+void MSVCOT::StopCot(){
+	if(cottid)
 		cotuse = 0;
-	}
-public:
-	DWORD cottid, cotuse;
-
-public:
-	virtual DWORD COT(LPVOID lp){
-		//while(cotuse) Sleep(1);
-		return 0;
-	}
-
-	void StopCot(){
-		if(cottid)
-			cotuse=0;
 		
-		while(cottid)
-			Sleep(2);
-	}
-
-	//void KillCot(int wl=20){
-	//	DWORD ct=cottid;
-	//	if(cottid && cottid!=0xdeaddead) cottid=0xdeaddead;
-	//	if(cottid) Sleep(wl);
-	//	if(cottid) KillThread(ct);
-	//}
-
-	int COTS(LPVOID lp=0){
-		MSVCOTD *cot; // new MSVCOTD;
-		msvcorenew(cot, MSVCOTD);
-		cot->cot = this; cot->lp=lp;
-		StopCot(); cot->cot->cotuse=1;
-		StartThread(::MSVCOT_RunCot, cot, &cottid, 0, 0, 0);
-	return 1;
-	}
-
-
-public:
-	// run in class for memory control, dont use this functions
-	MSVCOT(unsigned short u){ cottid=0; }
-
-	DWORD MSVCOT_RunCot(LPVOID lp){
-		MSVCOTD *cot = (MSVCOTD*)lp;
-		cot->cot->COT(cot->lp);
-		cot->cot->cottid = 0;
-		//delete cot;
-		msvcoredelete(cot, MSVCOTD);
-		return 0;
-	}
-
-};
+	while(cottid)
+		Sleep(2);
+}
+// MSVCOT class ~ //
 
 unsigned short MSVCOTFORMEMORYCONTROL_US;
 MSVCOT MSVCOTFORMEMORYCONTROL(MSVCOTFORMEMORYCONTROL_US);
@@ -209,54 +170,45 @@ class MSVMCOT;
 
 DWORD MSVMCOT_RunCot(LPVOID lp);
 
-struct MSVMCOTD{
-	LPVOID lp;
-	MSVMCOT*cot;
-};
+// MSVMCOT class //
+MSVMCOT::MSVMCOT(){
+	cottid = 0;
+}
 
-class MSVMCOT{
-protected:
-	MSVMCOT(){ cottid=0; }
-public:
-	DWORD cottid;
+DWORD MSVMCOT::MCOT(LPVOID lp){
+	//while(cotuse) Sleep(1);
+	return 0;
+}
 
-public:
-	virtual DWORD MCOT(LPVOID lp){
-		//while(cotuse) Sleep(1);
-		return 0;
-	}
+//void KillCot(int wl=20){
+//	DWORD ct=cottid;
+//	if(cottid && cottid!=0xdeaddead) cottid=0xdeaddead;
+//	if(cottid) Sleep(wl);
+//	if(cottid) KillThread(ct);
+//}
 
-	void StopCot(){}
+int MSVMCOT::MCOTS(LPVOID lp){
+	MSVMCOTD *cot; // = new MSVMCOTD;
+	msvcorenew(cot, MSVMCOTD);
+	cot->cot = this; cot->lp = lp;
+	StartThread(::MSVMCOT_RunCot, cot, &cottid, 0, 0, 0);
+	return 1;
+}
 
-	//void KillCot(int wl=20){
-	//	DWORD ct=cottid;
-	//	if(cottid && cottid!=0xdeaddead) cottid=0xdeaddead;
-	//	if(cottid) Sleep(wl);
-	//	if(cottid) KillThread(ct);
-	//}
+// run in class for memory control, dont use this functions
+MSVMCOT::MSVMCOT(unsigned short u){ cottid=0; }
 
-	int MCOTS(LPVOID lp=0){
-		MSVMCOTD *cot; // = new MSVMCOTD;
-		msvcorenew(cot, MSVMCOTD);
-		cot->cot = this; cot->lp = lp;
-		StartThread(::MSVMCOT_RunCot, cot, &cottid, 0, 0, 0);
-		return 1;
-	}
-
-public:
-	// run in class for memory control, dont use this functions
-	MSVMCOT(unsigned short u){ cottid=0; }
-
-	DWORD MSVMCOT_RunCot(LPVOID lp){
-		MSVMCOTD *cot = (MSVMCOTD*)lp;
-		cot->cot->MCOT(cot->lp);
-		cot->cot->cottid = 0;
-		//delete cot;
-		msvcoredelete(cot, MSVMCOTD);
-		return 0;
-	}
-
-};
+DWORD MSVMCOT::MSVMCOT_RunCot(LPVOID lp){
+	MSVMCOTD *cot = (MSVMCOTD*)lp;
+	cot->cot->MCOT(cot->lp);
+	cot->cot->cottid = 0;
+	//delete cot;
+	msvcoredelete(cot, MSVMCOTD);
+	return 0;
+}
+	
+void MSVMCOT::StopCot(){}
+// MSVMCOT class ~ //
 
 unsigned short MSVMCOTFORMEMORYCONTROL_US;
 MSVMCOT MSVMCOTFORMEMORYCONTROL(MSVMCOTFORMEMORYCONTROL_US);

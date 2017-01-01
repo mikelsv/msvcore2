@@ -7,8 +7,8 @@ public:
 	// Process upped
 	unsigned int procupped;
 
-	// Process arguments
-	char **argv;
+	// Process arguments & environment
+	char **argv, **arge;
 	int args;
 
 	// Windows path
@@ -24,7 +24,7 @@ public:
 	ILink link;
 
 	MsvCoreState();
-	void Main(int args, char* arg[]);
+	void Main(int args, char* arg[], char* arge[]);
 
 	VString NormalPath(char *path);
 	void GetWindowsDirectory();

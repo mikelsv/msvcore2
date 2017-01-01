@@ -159,8 +159,12 @@ public:
 		return 0;
 	}
 
-} listen_http_options;
+};
 
+#ifndef USEMSV_MSVCORE
+	extern
+#endif
+	_listen_http_options listen_http_options;
 
 
 

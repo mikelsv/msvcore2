@@ -15,7 +15,9 @@
 #define STORM_LISTEN_CGI_CLOSE	3
 #define STORM_LISTEN_CGI_DELETE	4
 
-TLock listen_cgi_lock;
+#ifdef USEMSV_MSVCORE
+	TLock listen_cgi_lock;
+#endif
 
 //#define PipeLine2 PipeLine
 
@@ -206,11 +208,19 @@ public:
 	}
 
 	//STORM_DEFINE_NEW_DELETE(listen_cgi);
-} listen_cgi;
+};
+
+#ifdef USEMSV_MSVCORE
+	class listen_cgi listen_cgi;
+#endif
 
 //STORM_DEFINE_NEW_DELETE_OK(listen_cgi);
+
+#ifdef USEMSV_MSVCORE
 
 DWORD StormListenCgiThread(LPVOID){
 	listen_cgi.Thread();
 	return 0;
 }
+
+#endif

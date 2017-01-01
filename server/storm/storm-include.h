@@ -41,14 +41,18 @@
 	#include <sys/epoll.h>
 #endif
 
-#ifdef STORMSERVER_POLL_SELECT
-	VString stormserver_poll = "select";
-#endif
-#ifdef STORMSERVER_POLL_EPOLL
-	VString stormserver_poll = "epoll";
-#endif
-#ifdef STORMSERVER_POLL_IOCP
-	VString stormserver_poll = "iocp";
+#ifdef USEMSV_MSVCORE
+	#ifdef STORMSERVER_POLL_SELECT
+		VString stormserver_poll = "select";
+	#endif
+	#ifdef STORMSERVER_POLL_EPOLL
+		VString stormserver_poll = "epoll";
+	#endif
+	#ifdef STORMSERVER_POLL_IOCP
+		VString stormserver_poll = "iocp";
+	#endif
+#else
+	extern VString stormserver_poll;
 #endif
 
 #ifndef STORMSERVER_CONFIG
@@ -92,14 +96,25 @@
 // storm core: based class & pooling sockets
 #include "storm-core.h"
 
+#ifdef USEMSV_MSVCORE
+	#include "storm-core.cpp"
+#endif
+
 // core
+#ifndef USEMSV_MSVCORE
+	extern 
+#endif
 StormCore MyStormCore;
 
 // storm server: listen port & accept connections
 #include "storm-server.h"
 
 // server
+#ifdef USEMSV_MSVCORE
 StormServer MyStormServer(MyStormCore);
+#else
+	extern StormServer MyStormServer;
+#endif
 
 // crypto ssl
 #include "storm-crypto.h"

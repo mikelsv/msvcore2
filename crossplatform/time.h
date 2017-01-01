@@ -42,7 +42,7 @@ public:
 	int weekday();
 	int monthdays(int month=0);
 
-	int gmttotime(VString line);
+	unsigned int gmttotime(VString line);
 
 	MString date(const VString line, unsigned int tm=-1, bool gmt=0, bool eng=0, BYTE c=0);
 	unsigned int rpmf_date(unsigned char *ret, unsigned int rsz, const VString line, unsigned int tm, bool gmt, bool eng, BYTE c);

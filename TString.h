@@ -105,6 +105,7 @@ TString itob(unsigned int val, int null=0);
 TString dtos(double val, int ml=5);
 //MString htob(VString line);
 TString gditos(double i);
+int itossz(unsigned int val);
 
 TString htob(VString line);
 TString btoh(VString line);

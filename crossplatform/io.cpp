@@ -381,8 +381,8 @@ int CopyFile(VString from, VString to){
 
 	int64 sz = stt.st_size;
 
-	while(sz){
-		int rd = ReadFile(fl, buf, minel(sz, S4K));		
+	while(sz > 0){
+		int rd = ReadFile(fl, buf, sz > S4K ? S4K : sz & 0xffff); // minel(sz, S4K)
 		int wr = WriteFile(fl2, buf, rd);
 
 		if(sz && rd != wr){
@@ -789,3 +789,138 @@ return 1;
 	}
 
 };
+
+
+#ifdef USEMSV_MEMORYCONTROL
+
+void msvcore_memcon_print(const char* tofile){
+	MemConLock();
+
+	VString s("                                                                                      ");
+	VString p("......................................................................................");
+
+	LStringX<S32K> ls;
+	int m = 0;
+
+	ls + "\r\n" "Memory Control: ";
+
+	if(tofile){
+		MTime mt;
+		ls + mt.date("d.m.y H:i:s");
+	}
+
+	ls + "\r\n";
+
+	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++)
+		if(m < strlen(MsvCoreMemoryControl.GetType(i).name))
+			m = strlen(MsvCoreMemoryControl.GetType(i).name);
+
+	if(m < 15)
+		m = 15;
+
+	if(m > 48)
+		m = 48;
+
+	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++){
+		MsvCoreMemoryControlType &el = MsvCoreMemoryControl.GetType(i);
+		int nsz = strlen(el.name);
+
+		ls + el.name + (nsz <= m ? s.str(0, m - nsz + 1) : VString());
+		ls + s.str(0, 10 - itossz(el.acount)) + el.acount
+			+ s.str(0, 10 - itossz(el.ucount)) + el.ucount
+			+ s.str(0, 10 - itossz(el.fcount)) + el.fcount
+			+ "\r\n";
+		
+#ifdef USEMSV_MEMORYCONTROL_INFO
+		ls + s.str(0, m + 1 - 3 - 9) + "mem"
+			+ p.str(0, 13 - itossz(el.amemory)) + el.amemory
+			+ p.str(0, 13 - itossz(el.umemory)) + el.umemory
+			+ p.str(0, 13 - itossz(el.fmemory)) + el.fmemory
+			+ "\r\n";
+#endif
+
+		// Output
+		if(ls.Size() >= S32K - S4K){
+			if(!tofile)
+				print((VString) ls);
+			else
+				SaveFileAppend(tofile, (VString) ls);
+
+			ls.Clean();
+		}
+	}
+
+	ls + "All:" + s.str(0, m - 4 + 1)
+		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.acount)) + MsvCoreMemoryControl.acount
+		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.ucount)) + MsvCoreMemoryControl.ucount
+		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.fcount)) + MsvCoreMemoryControl.fcount
+		+ "\r\n";
+
+#ifdef USEMSV_MEMORYCONTROL_INFO
+	{
+	MsvCoreMemoryControlCount &el = MsvCoreMemoryControl;
+
+		ls + s.str(0, m + 1 - 3 - 9) + "mem"
+			+ p.str(0, 13 - itossz(el.amemory)) + el.amemory
+			+ p.str(0, 13 - itossz(el.umemory)) + el.umemory
+			+ p.str(0, 13 - itossz(el.fmemory)) + el.fmemory
+			+ "\r\n";
+	}
+#endif
+
+	//ls + "Malloc: " + msvcore_memcon_malloc_count + ", use: " + (msvcore_memcon_malloc_count - msvcore_memcon_free_count) + ", free: " + msvcore_memcon_free_count + "\r\n";
+
+	if(!tofile)
+		print((VString) ls);
+	else
+		SaveFileAppend(tofile, (VString) ls);
+
+	MemConUnLock();
+	return ;
+}
+
+void msvcore_memcon_print_stack(const char* tofile){
+	MemConLock();
+
+	VString s("                                                                                      ");
+	LStringX<S32K> ls;
+	int m = 0;
+
+	ls + "\r\n" "------------- Memory Control StackTrace: ";
+
+	if(tofile){
+		MTime mt;
+		ls + mt.date("d.m.y H:i:s");
+	}
+
+	ls + " ------------------------------------- \r\n";
+
+	for(int i = 0; i < MsvCoreMemoryControl.GetStackSz(); i++){
+		MsvCoreMemoryControlStack *sel = MsvCoreMemoryControl.GetStackPos(i);
+		ls + "AUF: " + sel->acount + "/" + sel->ucount + "/" + sel->fcount
+			+ ". MEM: " + sel->amemory + "/" + sel->umemory + "/" + sel->fmemory
+			+ ". CRC: " + sel->sid
+			+ "\r\n" + VString(sel->stacktrace) +  "\r\n\r\n";
+
+
+		// Output
+		if(ls.Size() >= S32K - S4K){
+			if(!tofile)
+				print((VString) ls);
+			else
+				SaveFileAppend(tofile, (VString) ls);
+
+			ls.Clean();
+		}
+	}
+
+	// Output
+	if(!tofile)
+		print((VString) ls);
+	else
+		SaveFileAppend(tofile, (VString) ls);
+
+	MemConUnLock();
+	return ;
+}
+#endif

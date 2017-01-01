@@ -29,7 +29,7 @@ public:
 
 };
 
-GLock pipelock;// int maxpipelock=512, thispipelock=0;
+// int maxpipelock=512, thispipelock=0;
 
 class PipeLine{
 	int upipe[2];
@@ -68,6 +68,8 @@ class PipeLine{
 
 public:
 	int64 usertime, kerneltime, cputime;
+
+	GLock pipelock;
 
 	PipeLine(){
 		stat=PPLNULL; isoutbuffer=0; isprocess=0;
@@ -691,6 +693,7 @@ class PipeLine2{
 //	unsigned long bread;   //кол-во прочитанных байт
 //	unsigned long avail;   //кол-во доступных байт
 #else
+	GLock pipelock;
 	int p_stdin[2], p_stdout[2], p_stderr[2], p_stdret[2], pid;// int *prc=&rc; int *rrc=new int;
 #endif
 
@@ -813,7 +816,7 @@ public:
 			return 0;
 
 		unsigned char buf[S8K];
-		DWORD bread, avail, rd;
+		DWORD bread, bwrite, avail, rd;
 		DWORD ec;
 
 		//основной цикл программы
@@ -826,8 +829,8 @@ public:
 			if(IsHandle(write_stdin)){
 				if(input.IsRead()){
 					bread = input.Read(VString(buf, sizeof(buf)));
-					WriteFile(write_stdin, buf, bread, &bread, NULL);
-					input.Readed(bread);
+					WriteFile(write_stdin, buf, bread, &bwrite, NULL);
+					input.Readed(bwrite);
 				}
 				else if(!isinput){
 					CloseHandle(write_stdin);

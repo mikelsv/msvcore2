@@ -6,11 +6,15 @@
 #define STORMSERVER_HTTP_ALIVE 5
 #define STORMSERVER_HTTP_CLOSE 6
 
-Versions STORMHTTPVER[]={
-	// new version to up
-	"0.0.0.2", "11.06.2015 07:02",
-	"0.0.0.1", "03.06.2015 22:41"
-};
+#ifdef USEMSV_MSVCORE
+	Versions STORMHTTPVER[]={
+		// new version to up
+		"0.0.0.2", "11.06.2015 07:02",
+		"0.0.0.1", "03.06.2015 22:41"
+	};
+#else
+	extern Versions STORMHTTPVER[];
+#endif
 
 
 #define STORMSERVER_HTTP_MAXPOST S1M
@@ -307,7 +311,7 @@ protected:
 			tls + read.str(0, m);
 			wel.readed(read, m);
 			return 0;
-		}		
+		}
 
 		return 0;
 	}
@@ -973,6 +977,7 @@ protected:
 	STORM_DEFINE_NEW_DELETE(listen_http);
 };
 
-STORM_DEFINE_NEW_DELETE_OK(listen_http);
-
-listen_http *listen_http::static_con = 0;
+#ifdef USEMSV_MSVCORE
+	STORM_DEFINE_NEW_DELETE_OK(listen_http);
+	listen_http *listen_http::static_con = 0;
+#endif

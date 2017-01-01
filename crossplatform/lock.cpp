@@ -326,3 +326,12 @@ void ALock::operator=(TLock *t){ UnLock(); tl = t; tl->Lock(); type = 2; return 
 void ALock::UnLock(){ if(type == 1) gl->UnLock(); else if(type == 2) tl->UnLock(); type = 0; }
 ALock::~ALock(){ if(type == 1) gl->UnLock(); else if(type == 2) tl->UnLock(); type = 0; }
 //};
+
+
+#ifdef USEMSV_MEMORYCONTROL
+	TLock memconlock, memconsymlock;
+	bool MemConLock(){ return memconlock.Lock(); }
+	bool MemConUnLock(){ return memconlock.UnLock(); }
+	bool MemConSymLock(){ return memconsymlock.Lock(); }
+	bool MemConSymUnLock(){ return memconsymlock.UnLock(); }
+#endif

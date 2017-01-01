@@ -275,7 +275,7 @@ public:
 			p += s;
 
 			if(p->node < pos){
-				f = ++p; 
+				f = ++ p; 
 				sz -= s + 1; 
 			}
 			else

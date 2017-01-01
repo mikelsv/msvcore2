@@ -412,4 +412,9 @@ public:
 		return ls;
 	}
 
-} listen_http_modstate;
+};
+
+#ifndef USEMSV_MSVCORE
+	extern
+#endif
+	_listen_http_modstate listen_http_modstate;

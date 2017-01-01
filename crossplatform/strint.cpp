@@ -116,6 +116,23 @@ TString itob(unsigned int val, int null){ // recreate it
 	return ret;
 }
 
+int itossz(unsigned int val){
+	//if(!val) return 0;
+	if(val<10) return 1;
+	if(val<100) return 2;
+	if(val<1000) return 3;
+	if(val<10000) return 4;
+	if(val<100000) return 5;
+	if(val<1000000) return 6;
+	if(val<10000000) return 7;
+	if(val<100000000) return 8;
+	if(val<1000000000) return 9;
+	//if(val<=10000000000ull) return 10;
+	//if(val<=100000000000ull) return 11;
+	//if(val<=1000000000000ull) return 12;
+	return 13;
+}
+
 
 // Replace
 TString Replace(VString line, VString fr, VString to, unsigned int cnt){

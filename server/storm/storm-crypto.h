@@ -378,7 +378,7 @@ protected:
 
 	// ssl
 	virtual int storm_socket_recv(SOCKET sock, char *data, int sz, int flag){
-		if(ssl && ssl->IsWork(1))
+		if(ssl && ssl->IsWork())
 			return ssl->Recv(data, sz);
 		return recv(sock, data, sz, flag);
 	}

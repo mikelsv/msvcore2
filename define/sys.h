@@ -19,7 +19,6 @@
 #ifdef WIN32 // Win32 include
 	#ifdef __GNUC__
 		#define _WIN32_WINNT  0x501
-
 	#endif
 
 	#include <direct.h>

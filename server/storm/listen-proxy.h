@@ -12,9 +12,15 @@ struct socks5_str{
 	unsigned int ip; unsigned short port;
 };
 
-int64 listen_proxy_cons = 0;
-int64 listen_proxy_recv = 0;
-int64 listen_proxy_send = 0;
+#ifdef USEMSV_MSVCORE
+	int64 listen_proxy_cons = 0;
+	int64 listen_proxy_recv = 0;
+	int64 listen_proxy_send = 0;
+#else
+	extern int64 listen_proxy_cons;
+	extern int64 listen_proxy_recv;
+	extern int64 listen_proxy_send;
+#endif
 
 class listen_proxy : public storm_core_ssl{
 protected:
@@ -202,13 +208,13 @@ protected:
 	STORM_DEFINE_NEW_DELETE(listen_proxy);
 };
 
-STORM_DEFINE_NEW_DELETE_OK(listen_proxy);
+#ifdef USEMSV_MSVCORE
+	STORM_DEFINE_NEW_DELETE_OK(listen_proxy);
+	listen_proxy *listen_proxy::static_con = 0;
+#endif
 
-listen_proxy *listen_proxy::static_con = 0;
 
-
-
-
+#ifdef NOUSEIT
 
 // Test
 DWORD TestSocks5(LPVOID){
@@ -291,3 +297,5 @@ DWORD TestSocks5_Old(LPVOID){
 
 	return 0;
 }
+
+#endif

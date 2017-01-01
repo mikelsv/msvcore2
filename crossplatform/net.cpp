@@ -12,18 +12,8 @@ public:
 #endif 
 	}
 
-}MsvCoreActivateSocket;
+} MsvCoreActivateSocket;
 
-
-
-// Functions
-void KeepAlive(SOCKET sock);
-unsigned int GetIP(VString ipa);
-unsigned int GetIPh(VString ipa);
-bool ifrecv(SOCKET sock, unsigned int wt = 0);
-bool ifsend(SOCKET sock, unsigned int wt = 0);
-void gettip(SOCKET sock, unsigned int &ip, unsigned short &port);
-void getcip(SOCKET sock, unsigned int &ip, unsigned short &port);
 
 
 void KeepAlive(SOCKET sock){
@@ -64,163 +54,172 @@ void getcip(SOCKET sock, unsigned int &ip, unsigned short &port){
 }
 
 
-
 // Connect Ip
-class ConIp{
-public:
-	// data
-	unsigned int ip, bip;
-	unsigned short port, bport;
-	char reuse, keepalive, nolisten, set_nonblock;
-	int type, proto;
+// ConIp class ~ //
+// Constructor
+ConIp::ConIp(){
+	Init();
+}
 
-public:
-	//con
-	ConIp(){ Init(); }
-	ConIp(VString _ip, VString _bip=VString()){
-		Init(); Ip(_ip, _bip); return ;
-		//VString p;
-		//if(_ip){ _ip=PartLine(_ip, p, ":"); if(_ip && !p){ p=_ip; _ip.Clean(); } ip=GetIP(_ip); port=p.toi(); }
-		//if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
-		return ;
+ConIp::ConIp(VString _ip, VString _bip){
+	Init();
+	Ip(_ip, _bip);
+	return ;
+}
+
+ConIp::ConIp(unsigned int _ip, unsigned short _port, unsigned int _bip, unsigned short _bport){
+	Init();
+	ip = _ip;
+	port = _port;
+	bip = _bip;
+	bport = _bport;
+	return ;
+}
+
+// Init
+void ConIp::Init(){
+	ip=0; bip=0; port=0; bport=0; type=SOCK_STREAM; proto=IPPROTO_TCP;
+	reuse=0; keepalive=0; nolisten=0;
+	set_nonblock = 0;
+}
+
+// Set
+void ConIp::Ip(VString _ip, VString _bip){
+	VString p;
+	if(_ip){
+		_ip = PartLine(_ip, p, ":");
+		ip = GetIP(_ip);
+		port = p.toi();
 	}
 
-	void Ip(VString _ip, VString _bip=VString()){
-		VString p;
-		if(_ip){ _ip=PartLine(_ip, p, ":"); ip=GetIP(_ip); port=p.toi(); }
-		if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
-		return ;
+	if(_bip){
+		_bip = PartLine(_bip, p, ":");
+		bip = GetIP(_bip);
+		bport = p.toi();
 	}
 
-	void IpL(VString _ip, VString _bip=VString()){
-		VString p;
-		if(_ip){ _ip=PartLine(_ip, p, ":"); if(_ip && !p){ p=_ip; _ip.Clean(); } ip=GetIP(_ip); port=p.toi(); }
-		if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
-		return ;
+	return ;
+}
+
+void ConIp::IpL(VString _ip, VString _bip){
+	VString p;
+	if(_ip){ _ip=PartLine(_ip, p, ":"); if(_ip && !p){ p=_ip; _ip.Clean(); } ip=GetIP(_ip); port=p.toi(); }
+	if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
+	return ;
+}
+
+//ConIP(const char* ip, const char *bip){
+//	Init(); VString p;
+//	if(_ip){ _ip=PartLine(_ip, p, ":"); ip=GetIP(_ip); port=p.toi(); }
+//	if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
+//	return ;
+//}
+
+
+// Options
+int ConIp::ReUse(){ return reuse; }
+int ConIp::ReUse(int v){ return reuse=v; }
+int ConIp::KeepAlive(){ return keepalive; }
+int ConIp::KeepAlive(int v){ return keepalive=v; }
+int ConIp::NoListen(){ return nolisten; }
+int ConIp::NoListen(int t){ return nolisten=t; }
+
+void ConIp::SetNonBlock(int v){
+	set_nonblock = v;
+}
+
+void ConIp::Proto(int _type, int _proto){ type=_type; proto=_proto; }
+
+// Actions
+int ConIp::Connect() const{
+	int err; if(!ip) return 0;
+	SOCKADDR_IN csocket;
+	SOCKET sock = socket(AF_INET, type, proto);
+
+	// bind
+	if(bip){
+		csocket.sin_family = AF_INET;
+		csocket.sin_addr.s_addr = htonl(bip);
+		csocket.sin_port = htons(bport);
+		err = bind(sock, (LPSOCKADDR)&csocket, sizeof(csocket) );
+		if(err<0){ closesocket(sock); return 0; }
 	}
 
-	//ConIP(const char* ip, const char *bip){
-	//	Init(); VString p;
-	//	if(_ip){ _ip=PartLine(_ip, p, ":"); ip=GetIP(_ip); port=p.toi(); }
-	//	if(_bip){ _bip=PartLine(_bip, p, ":"); bip=GetIP(_bip); bport=p.toi(); }
-	//	return ;
+	// connect
+	csocket.sin_addr.s_addr = htonl(ip);
+	csocket.sin_family = AF_INET;
+ 	csocket.sin_port = htons(port);
+
+	if(proto == IPPROTO_UDP)
+		return sock;
+
+	if(set_nonblock){
+#ifdef WIN32
+		unsigned long v = 1;
+	if(ioctlsocket(sock, FIONBIO, &v) < 0)
+#else
+	if(fcntl(sock, F_SETFL, O_NONBLOCK) < 0)
+#endif
+		print("SOCKOPT O_NONBLOCK failed.\r\n");
+	//fcntl(sock, F_SETFL, O_NONBLOCK);
+	}		
+
+	err = connect(sock, (struct sockaddr*)&csocket, sizeof(csocket));
+	if(err < 0 && !set_nonblock){
+		closesocket(sock);
+		return 0;
+	}
+	//KeepAlive(sock);
+
+	// options
+	int i=1;
+	if(keepalive)
+		if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&i, 4)) print("SOCKOPT ERROR\r\n");
+	if(reuse)
+		if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&i, sizeof(i))) print("SOCKOPT ERROR\r\n");
+	return (int)sock;
+}
+
+SOCKET ConIp::Listen(){
+	int err;// if(!ip) return 0;
+	SOCKADDR_IN csocket;
+#ifdef WIN32
+	SOCKET sock = WSASocket(AF_INET, type, proto, NULL, 0, WSA_FLAG_OVERLAPPED);
+#else
+	SOCKET sock = socket(AF_INET, type, proto);
+#endif
+
+	// options
+	int i=1;
+	if(reuse){
+		if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&i, sizeof(i))) 
+			print("SOCKOPT ERROR: SO_REUSEADDR\r\n");
+	}
+
+    struct timeval tv;
+	tv.tv_sec = 30; tv.tv_usec=0;
+	if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)))
+		print("SOCKOPT ERROR: SO_RCVTIMEO\r\n");
+
+	// bind
+	//if(bip){
+		csocket.sin_family = AF_INET;
+		csocket.sin_addr.s_addr = htonl(ip);
+		csocket.sin_port = htons(port);
+		err = bind(sock, (LPSOCKADDR)&csocket, sizeof(csocket) );
+		if(err<0){ closesocket(sock); return 0; }
 	//}
 
-	ConIp(unsigned int _ip, unsigned short _port, unsigned int _bip=0, unsigned short _bport=0){
-		Init(); ip=_ip; port=_port; bip=_bip; bport=_bport;
-		return ;
-	}
-	
-	// init
-	void Init(){
-		ip=0; bip=0; port=0; bport=0; type=SOCK_STREAM; proto=IPPROTO_TCP;
-		reuse=0; keepalive=0; nolisten=0;
-		set_nonblock = 0;
-	}
+	// options
+	if(keepalive)
+		if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&i, 4)) print("SOCKOPT ERROR\r\n");
 
-	// opt
-	int ReUse(){ return reuse; }
-	int ReUse(int v){ return reuse=v; }
-	int KeepAlive(){ return keepalive; }
-	int KeepAlive(int v){ return keepalive=v; }
-	int NoListen(){ return nolisten; }
-	int NoListen(int t){ return nolisten=t; }
+	if(nolisten || proto==IPPROTO_UDP) return sock;
+	err = listen(sock, 0x7fffffff); if(err<0){ closesocket(sock); return 0; }
+	return sock;
+}
+// ConIp class ~ //
 
-	void SetNonBlock(int v = 1){
-		set_nonblock = v;
-	}
-
-	void Proto(int _type, int _proto){ type=_type; proto=_proto; }
-
-	// act
-	int Connect() const{
-		int err; if(!ip) return 0;
-		SOCKADDR_IN csocket;
-		SOCKET sock = socket(AF_INET, type, proto);
-
-		// bind
-		if(bip){
-			csocket.sin_family = AF_INET;
-			csocket.sin_addr.s_addr = htonl(bip);
-			csocket.sin_port = htons(bport);
-			err = bind(sock, (LPSOCKADDR)&csocket, sizeof(csocket) );
-			if(err<0){ closesocket(sock); return 0; }
-		}
-
-		// connect
-		csocket.sin_addr.s_addr = htonl(ip);
-		csocket.sin_family = AF_INET;
- 		csocket.sin_port = htons(port);
-
-		if(proto == IPPROTO_UDP)
-			return sock;
-
-		if(set_nonblock){
-#ifdef WIN32
-			unsigned long v = 1;
-		if(ioctlsocket(sock, FIONBIO, &v) < 0)
-#else
-		if(fcntl(sock, F_SETFL, O_NONBLOCK) < 0)
-#endif
-			print("SOCKOPT O_NONBLOCK failed.\r\n");
-		//fcntl(sock, F_SETFL, O_NONBLOCK);
-		}		
-
-		err = connect(sock, (struct sockaddr*)&csocket, sizeof(csocket));
-		if(err < 0 && !set_nonblock){
-			closesocket(sock);
-			return 0;
-		}
-		//KeepAlive(sock);
-
-		// options
-		int i=1;
-		if(keepalive)
-			if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&i, 4)) print("SOCKOPT ERROR\r\n");
-		if(reuse)
-			if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&i, sizeof(i))) print("SOCKOPT ERROR\r\n");
-		return (int)sock;
-	}
-
-	SOCKET Listen(){
-		int err;// if(!ip) return 0;
-		SOCKADDR_IN csocket;
-#ifdef WIN32
-		SOCKET sock = WSASocket(AF_INET, type, proto, NULL, 0, WSA_FLAG_OVERLAPPED);
-#else
-		SOCKET sock = socket(AF_INET, type, proto);
-#endif
-
-		// options
-		int i=1;
-		if(reuse){
-			if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&i, sizeof(i))) 
-				print("SOCKOPT ERROR: SO_REUSEADDR\r\n");
-		}
-
-        struct timeval tv;
-		tv.tv_sec = 30; tv.tv_usec=0;
-		if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)))
-			print("SOCKOPT ERROR: SO_RCVTIMEO\r\n");
-
-		// bind
-		//if(bip){
-			csocket.sin_family = AF_INET;
-			csocket.sin_addr.s_addr = htonl(ip);
-			csocket.sin_port = htons(port);
-			err = bind(sock, (LPSOCKADDR)&csocket, sizeof(csocket) );
-			if(err<0){ closesocket(sock); return 0; }
-		//}
-
-		// options
-		if(keepalive)
-			if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&i, 4)) print("SOCKOPT ERROR\r\n");
-
-		if(nolisten || proto==IPPROTO_UDP) return sock;
-		err = listen(sock, 0x7fffffff); if(err<0){ closesocket(sock); return 0; }
-		return sock;
-	}
-};
 
 
 // Connect functions

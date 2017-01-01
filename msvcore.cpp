@@ -1,47 +1,48 @@
-/*	Copyright (C) 2004-2100 Mishael Senin, aka MikelSV.  All rights reserved.
-
-	Ћицензи€ попул€ризации автора. :]
-	¬ы не должны измен€ть им€ и другую информацию о разработчике и не присваивать авторство себе.
-	Ќе продавать и не брать денег за код из данной библиотеки.
-	–азрешаетс€ модифицировать и дорабатывать.
-	 од предоставлен как есть и автор не отвечает, даже если вы попытаетесь прострелить себе ногу.
-
-	License popularizing author. [LPA]
-	You should not change the name and other information about the developer and not assign authorship itself.
-	Do not sell and do not take money for the code from this library.
-	Permission is granted to modify and refine.
-	Author bears no responsibility for any consequences of using this code.
-	Responsibility for shooting through your leg lies entirely on you.
-* /
+/*	Copyright (C) 2004-2100 Mishael Senin, aka MikelSV.  All rights reserved. MIT Licence. * /
 
 //>> Velcome to MSV Lib. <<
 //>> New name MSV Core <<
 //>> New name MSV Core Two [21.11.2016 15:27] <<
 
+// Add to project: "path_to_msvcore2\VString.cpp" "path_to_msvcore2\MString.cpp"
+// For me: "..\..\opensource\msvcore2\VString.cpp" "..\..\opensource\msvcore2\MString.cpp"
 
-// !!!!!>>>>>>>>>>> Add this to general cpp: #define USEMSV_GENERALCPP
-//					Add to project: "..\..\opensource\msvcore2\VString.cpp" "..\..\opensource\msvcore2\MString.cpp"
+// ----------------------------------------------------------------- First cpp -----------------------------------
+/*
+#define USEMSV_MSVCORE // include msvcore cpp files.
+// Add all msvcore extensions used in you proejects for include cpp files for it.
+
+#include "path_to_msvcore2/msvcore.cpp"
+*/
+// ----------------------------------------------------------------- End of first cpp ----------------------------
+// ----------------------------------------------------------------- Other cpp files  ----------------------------
+/*
+// include msvcore extensions used in this cpp.
+#include "path_to_msvcore2/msvcore.cpp"
+*/
+// ----------------------------------------------------------------- End of other cpp files ----------------------
 
 
 // ----------------------------------------------------------------- Simple Variant ---------------------------
 /*
-#define USEMSV_GENERALCPP
 #define PROJECTNAME "projectname"
 #define PROJECTVER PROJECTNAME ## _versions
+#define USEMSV_MSVCORE
 
-#include "../../opensource/msvcore2/msvcore.cpp"
+#include "path_to_msvcore2/msvcore.cpp"
 
 Versions PROJECTVER[]={
 	// new version to up
 	"0.0.0.1", "10.10.2013 21:24"
 };
 
-int main(int args, char* arg[]){
-	msvcoremain(args, arg);
+int main(int args, char* arg[], char* env[]){
+	msvcoremain(args, arg, env);
 	print(PROJECTNAME, " v.", PROJECTVER[0].ver," (", PROJECTVER[0].date, ").\r\n");
 	return 0;
 }
 */
+
 // ----------------------------------------------------------------- End of Simple Variant -----------------------
 
 // Process info: msvcorestate (class MsvCoreState).
@@ -80,6 +81,11 @@ int main(int args, char* arg[]){
 // Any
 // #define USEMSV_HASH - hash functions: md5, sha.
 // #define USEMSV_TGBOTS - Use telegramm bots class.
+// #define USEMSV_INTERCEPT - interception functions
+
+// Memory:
+// #define USEMSV_MEMORYCONTROL - interception malloc() & free(). [Set as Global define!]
+
 
 // OLD
 // ||  ||  ||  ||  ||  ||  ||  ||  ||  ||  ||  ||
@@ -140,8 +146,8 @@ int main(int args, char* arg[]){
 // #define USEMSV_GAMEBOX		- use GameBox class.
 	
 // Memory:
-// #define USEMSV_MEMORYCONTROL - interception malloc() & free()
-// #define USEMSV_INTERCEPT_MALLOC - interception malloc() & free() // don't work
+// +++ #define USEMSV_MEMORYCONTROL - interception malloc() & free()
+// +++ #define USEMSV_INTERCEPT_MALLOC - interception malloc() & free() // don't work
 
 // API
 // #define USEMSV_NESTAPI - use Nest API
@@ -160,23 +166,12 @@ int main(int args, char* arg[]){
 // #define USEMSV_HASHTREE - Hash Tree.
 
 
-
-#ifndef PROJECTNAME
-	#error Please set #define PROJECTNAME "you_project_name"
-#endif
-
 // Include Defines
 #include "msvdefine.h"
 
-#ifdef USEMSV_GENERALCPP
+#ifdef USEMSV_MSVCORE
 	// Include Code
 	#include "msvdefine.cpp"
-
-	int msvcoremain(int args, char* arg[]){
-		msvcorestate.Main(args, arg);
-	return 1;
-	}
-
 #endif
 
 #ifdef USEMSV_TRIELIST
@@ -184,11 +179,17 @@ int main(int args, char* arg[]){
 #endif
 
 #ifdef USEMSV_HASH
-	#include "crossplatform/hash.cpp"
+	#include "extension/hash.h"
+	#ifdef USEMSV_MSVCORE
+		#include "extension/hash.cpp"
+	#endif
 #endif
 
 #ifdef USEMSV_CONSOLE
-	#include "crossplatform/console.cpp"
+	//#include "crossplatform/console.h"
+	//#ifdef USEMSV_MSVCORE
+		#include "crossplatform/console.cpp"
+	//#endif
 #endif
 
 #ifdef USEMSV_XDATACONT
@@ -196,7 +197,10 @@ int main(int args, char* arg[]){
 #endif
 
 #ifdef USEMSV_OPENSSL
-	#include "crossplatform/openssl.cpp"
+	#include "extension/openssl.h"	
+	#ifdef USEMSV_MSVCORE
+		#include "extension/openssl.cpp"
+	#endif
 #endif
 
 #ifdef USEMSV_PCRE
@@ -212,8 +216,10 @@ int main(int args, char* arg[]){
 #endif
 
 #ifdef USEMSV_HTTP
-	//#include "crossplatform/iheader.cpp"
-	#include "crossplatform/http.cpp"
+	#include "extension/http.h"
+	#ifdef USEMSV_MSVCORE
+		#include "extension/http.cpp"
+	#endif
 #endif
 
 #ifdef USEMSV_TGBOTS
@@ -222,8 +228,18 @@ int main(int args, char* arg[]){
 
 #ifdef USEMSV_STORMSERVER
 	#include "server/storm/storm-include.h"
+	//#ifdef USEMSV_MSVCORE
+	//	#include "server/storm/storm-include.cpp"
+	//#endif	
 #endif
 
 #ifdef USEMSV_LIGHTSERVER
 	#include "server/light/light.h"
+#endif
+
+#ifdef USEMSV_INTERCEPT
+#ifdef USEMSV_MSVCORE
+	#include "special/asmp.h"
+	#include "special/interception.h"
+#endif
 #endif

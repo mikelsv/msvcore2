@@ -181,25 +181,35 @@ int MTime::monthdays(int month){ if(month>12) month-=12;
 	return 0;
 }
 
-int MTime::gmttotime(VString line){
+unsigned int MTime::gmttotime(VString tline){
 	// Friday, 31-Dec-99 23:59:59 GMT
+	// Thu, 01 Jan 1970 00:00:01 GMT
 
-	line=PartLineOT(line, ",");
+	VString line = PartLineOT(tline, ",");
 	dspacev(line, 7);
-	if(line<22)
-		return 0;
 
-	day=line.str(0,2).toi();
-	year=line.str(7,4).toi();
-	hour=line.str(12,2).toi();
-	minute=line.str(15,2).toi();
-	sec=line.str(18,2).toi();
+	// dmy
+	day = line.str(0,2).toi();
 
-	for(int i=0; i<12; i++)
-		if(cmp(mtmonths[i].data, line.data+3, 3)){
-			month=i+1;
+	for(int i = 0; i < 12; i ++)
+		if(cmp(mtmonths[i].data, line.data + 3, 3)){
+			month = i + 1;
 			break;
 		}
+
+	if(line == 22){
+		year = line.str(7,2).toi();
+		year += year < 70 ? 2000 : 1900;
+		line = line.str(10);
+	} else if(line == 24){
+		year = line.str(7,4).toi();
+		line = line.str(12);
+	} else
+		return 0;
+
+	hour = line.str(0,2).toi();
+	minute = line.str(3,2).toi(); 
+	sec = line.str(6,2).toi();
 
 	return mktime(year, month, day, hour, minute, sec, 1);
 }
