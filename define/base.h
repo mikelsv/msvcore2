@@ -170,28 +170,6 @@ static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01
 #include "memcon.h"
 #endif
 
-#ifdef USEMSV_MEMORYCONTROL_X
-	#include <typeinfo>
-
-	#ifdef WIN32
-		#include "DbgHelp.h"
-		#include <WinBase.h>
-		#pragma comment(lib, "Dbghelp.lib")
-	#endif
-
-	void* msvcore_memcon_malloc2(int tid, void *t, const char *name, int size, int mallocsize);
-	void msvcore_memcon_free2(int tid, void *t, const char *name, int size, void *freev);
-
-	#ifndef USEMSV_MSVCORE
-		#define malloc(v) msvcore_memcon_malloc2(typeid(*this).hash_code(), this, typeid(*this).name(), sizeof(*this), v)
-		#define free(v) msvcore_memcon_free2(typeid(*this).hash_code(), this, typeid(*this).name(), sizeof(*this), v)
-
-		void* operator new(size_t sz);
-		void operator delete(void * p);
-	#endif
-#endif
-
-
 // New
 #define msvcorenew(a, b) a = (b*) malloc(sizeof(b)); new(a)b;
 #define msvcoredelete(a, b) a->~b(); free(a);

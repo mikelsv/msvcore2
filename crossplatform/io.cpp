@@ -800,7 +800,10 @@ void msvcore_memcon_print(const char* tofile){
 	VString p("......................................................................................");
 
 	LStringX<S32K> ls;
-	int m = 0;
+	int count_size = 10;
+	int mem_size = 13;
+	int max_size = 0;
+	int name_size;
 
 	ls + "\r\n" "Memory Control: ";
 
@@ -812,30 +815,42 @@ void msvcore_memcon_print(const char* tofile){
 	ls + "\r\n";
 
 	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++)
-		if(m < strlen(MsvCoreMemoryControl.GetType(i).name))
-			m = strlen(MsvCoreMemoryControl.GetType(i).name);
+		if(max_size < (name_size = strlen(MsvCoreMemoryControl.GetType(i).name)))
+			max_size = name_size;
 
-	if(m < 15)
-		m = 15;
+	if(max_size < 15)
+		max_size = 15;
 
-	if(m > 48)
-		m = 48;
+	if(max_size > 48)
+		max_size = 48;
+	else{
+		count_size = minel(mem_size, ((79 - max_size) / 3));		
+	}
 
+	// Info
+	name_size = 5;
+	ls + "#Name" + (name_size <= max_size ? s.str(0, max_size - name_size + 1) : VString());
+	ls + s.str(0, count_size - 5) + "Alloc"
+		+ s.str(0, count_size - 3) + "Use"
+		+ s.str(0, count_size - 4) + "Free"
+		+ "\r\n";
+
+	// Types
 	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++){
 		MsvCoreMemoryControlType &el = MsvCoreMemoryControl.GetType(i);
-		int nsz = strlen(el.name);
+		name_size = strlen(el.name);
 
-		ls + el.name + (nsz <= m ? s.str(0, m - nsz + 1) : VString());
-		ls + s.str(0, 10 - itossz(el.acount)) + el.acount
-			+ s.str(0, 10 - itossz(el.ucount)) + el.ucount
-			+ s.str(0, 10 - itossz(el.fcount)) + el.fcount
+		ls + el.name + (name_size <= max_size ? p.str(0, max_size - name_size + 1) : VString());
+		ls + p.str(0, count_size - itossz(el.acount)) + el.acount
+			+ p.str(0, count_size - itossz(el.ucount)) + el.ucount
+			+ p.str(0, count_size - itossz(el.fcount)) + el.fcount
 			+ "\r\n";
 		
 #ifdef USEMSV_MEMORYCONTROL_INFO
-		ls + s.str(0, m + 1 - 3 - 9) + "mem"
-			+ p.str(0, 13 - itossz(el.amemory)) + el.amemory
-			+ p.str(0, 13 - itossz(el.umemory)) + el.umemory
-			+ p.str(0, 13 - itossz(el.fmemory)) + el.fmemory
+		ls + s.str(0, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
+			+ s.str(0, mem_size - itossz(el.amemory)) + el.amemory
+			+ s.str(0, mem_size - itossz(el.umemory)) + el.umemory
+			+ s.str(0, mem_size - itossz(el.fmemory)) + el.fmemory
 			+ "\r\n";
 #endif
 
@@ -850,20 +865,20 @@ void msvcore_memcon_print(const char* tofile){
 		}
 	}
 
-	ls + "All:" + s.str(0, m - 4 + 1)
-		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.acount)) + MsvCoreMemoryControl.acount
-		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.ucount)) + MsvCoreMemoryControl.ucount
-		+ s.str(0, 10 - itossz(MsvCoreMemoryControl.fcount)) + MsvCoreMemoryControl.fcount
+	ls + "All " + p.str(0, max_size - 4 + 1)
+		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.acount)) + MsvCoreMemoryControl.acount
+		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.ucount)) + MsvCoreMemoryControl.ucount
+		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.fcount)) + MsvCoreMemoryControl.fcount
 		+ "\r\n";
 
 #ifdef USEMSV_MEMORYCONTROL_INFO
 	{
 	MsvCoreMemoryControlCount &el = MsvCoreMemoryControl;
 
-		ls + s.str(0, m + 1 - 3 - 9) + "mem"
-			+ p.str(0, 13 - itossz(el.amemory)) + el.amemory
-			+ p.str(0, 13 - itossz(el.umemory)) + el.umemory
-			+ p.str(0, 13 - itossz(el.fmemory)) + el.fmemory
+		ls + s.str(0, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
+			+ s.str(0, mem_size - itossz(el.amemory)) + el.amemory
+			+ s.str(0, mem_size - itossz(el.umemory)) + el.umemory
+			+ s.str(0, mem_size - itossz(el.fmemory)) + el.fmemory
 			+ "\r\n";
 	}
 #endif
