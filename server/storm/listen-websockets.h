@@ -14,9 +14,9 @@ public:
 
 			if(data.data){
 				wel.readed(head.size()+4);
-				head.sz += 2;
+				head.sz += 4;
 
-				return AnalysHead(wel, head);
+				return AnalysHead(wel, head, data);
 			}
 			else 
 				return ;
@@ -24,33 +24,39 @@ public:
 			int r, opcode;
 			VString msg;
 
-			r = WebSocketDecodeData(read, opcode, msg);
-			if(r < 0)
-				return ;
-			if(r == 0){
-				wel.close();
-				return ;
-			}
+			while(1){
+				r = WebSocketDecodeData(read, opcode, msg);
+				if(r < 0)
+					return ;
+				if(r == 0){
+					wel.close();
+					return ;
+				}
 
-			AnalysData(wel, opcode, msg);
-			wel.readed(r);
+				AnalysData(wel, opcode, msg);
+				wel.readed(read, r);
+
+				if(!read)
+					return ;
+			}
 		}
 
 		return ;
 	}
 
-	virtual void AnalysHead(storm_work_el &wel, VString head){
+	virtual void AnalysHead(storm_work_el &wel, VString head, VString data){
 		//VString path = PartLineDouble(head, "GET ", " HTTP");
 		//VString host = PartLineDouble(head, "\r\nHost: ", "\r\n");
 		VString key = PartLineDouble(head, "\r\nSec-WebSocket-Key: ", "\r\n");
 		VString origin = PartLineDouble(head, "\r\nOrigin: ", "\r\n");
 
-		MString ret;
+		SString ret;
 		ret.Add("HTTP/1.1 101 Switching Protocols\r\n" \
 			"Upgrade: WebSocket\r\n" \
             "Connection: Upgrade\r\n" \
-            "Sec-WebSocket-Origin: ", origin, "\r\n" \
+            //"Sec-WebSocket-Origin: ", origin, "\r\n" 
 			"Sec-WebSocket-Accept: ", WebSocketAcceptKey(key), "\r\n" \
+			//"Sec-WebSocket-Protocol: chat" "\r\n" 
             "\r\n");
 
 		wel.send(ret);
@@ -62,7 +68,13 @@ public:
 	virtual void AnalysData(storm_work_el &wel, int opcode, VString read){
 		switch(opcode){
 			case LWSOC_STRING:{
-				MString ret = WebSocketEncodeData(LWSOC_STRING, HLString() + "recieved: " + read);
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
+				wel.send(ret);
+			}
+			break;
+
+			case LWSOC_BINARY:{
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
 				wel.send(ret);
 			}
 			break;
@@ -73,6 +85,7 @@ public:
 			}
 			break;
 
+			case LWSOC_CLOSE:
 			default:
 				wel.close();
 			break;

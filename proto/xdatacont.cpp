@@ -72,6 +72,7 @@ short type; // text, tag
 
 };
 
+#ifdef USEMSV_MSVCORE
 
 XMLel* XMLGet(VString line, XMLel *el){
 	if(!el) return 0;
@@ -82,6 +83,8 @@ XMLel* XMLGet(VString line, XMLel *el){
 	}
 	return el;
 }
+
+#endif
 
 /*
 void XMLtoCont(XMLel *el, Cont &ct){
@@ -176,7 +179,7 @@ public:
 			return 0;
 
 		XDataEl*el;
-		for(el=_l; el; el=el->_n){
+		for(el=_l; el; el=el->_l){
 			if(el->key==line)
 				return el;
 		}
@@ -319,7 +322,7 @@ public:
 	operator XDataPEl(){ if(data.Size()) return data.Get(0); return 0; }
 	XDataEl* GetData(){ if(data.Size()) return data.Get(0); return 0; }
 
-	// GetValue
+	// Get Value
 	VString GetValue(VString line){ return GetData()->GetVal(line); }
 	XDataEl* Get(VString line){ return GetData()->Get(line); }
 	VString operator[](VString line){ return GetData()->GetVal(line); }
@@ -328,6 +331,24 @@ public:
 		return Get(key);
 	}
 
+	// Set Value
+	XDataEl* AddElement(XDataEl *parent){ // , VString key, VString val
+		if(!parent)
+			return 0;
+
+		XDataEl *el = data.Add(); // &data.inserta();
+		
+		if(!parent->_a){
+			parent->_a = el;
+			parent->_e = el;
+		} else {
+			el->_p = parent->_e;
+			el->_p->_n = el;
+			parent->_e = el;
+		}
+		
+		return el;
+	}
 
 	void Release(){ Clear(); return ; }
 	
@@ -779,6 +800,8 @@ public:
 					return ;
 				} else
 					p->toit = 0;
+
+				p = p->prev;
 			}
 
 			if(prev)
@@ -845,7 +868,8 @@ public:
 			lel = 0;
 		
 			// to end tag
-			while(line < to && *line != '>'){
+			while(line < to){ // && *line != '>'){
+				int opt_etag = *line == '>';
 
 				// string
 				if(*line >= 'a' && *line <= 'z' || *line >= 'A' && *line <= 'Z' || *line >= '0' && *line <= '9'){
@@ -925,10 +949,15 @@ public:
 					opt_kv = 0;
 					k.Clean();
 				}
+
+				if(opt_etag){
+					line --;
+					break;
+				}
 			}
 
 			if(line < to){
-				if(*(line - 1) == '/')
+				if(*(line - 1) == '/' || nprev.tag[0] == '!' || nprev.tag[0] == '?')
 					opt_cl = 1;
 				line ++;
 			}
@@ -985,6 +1014,53 @@ public:
 };
 
 
+#ifdef USEMSV_MSVCORE
+
+int prmf_json_encode(unsigned char * ret, unsigned int rsz, unsigned char * data,  unsigned int sz){
+	unsigned char *line = data;
+	unsigned char *ln = line, *to = ln + sz; unsigned char *aret = ret, *rt = ret ? ret + rsz : 0; // define
+
+#define prmd_add_memcpy() if(ln - line){ if(ret + (ln - line) <= rt) memcpy(ret, line, ln - line); ret += ln - line; line = ln; }
+
+	while(ln < to){
+		if(*ln == '\\'){
+			prmd_add_memcpy();
+			ln ++;
+
+			if(ln < to){
+				unsigned char d = *ln;
+
+				if(d == 'r')
+					d = '\r';
+				else if(d == 'n')
+					d = '\n';
+				else if(d == 't')
+					d = '\t';
+
+				if(ret < rt)
+					memcpy(ret, &d, 1);
+				ret += 1;
+			}
+
+			line +=2;
+		}
+
+		ln ++;
+	}
+
+	prmd_add_memcpy();
+
+	return ret - aret;
+}
+
+TString prmf_json_encode(VString line){
+	TString ret;
+	ret.Reserve(prmf_json_encode(0, 0, line, line));
+	prmf_json_encode(ret, ret, line, line);
+	return ret;
+}
+
+#endif
 
 
 class XDataXmlEl{
@@ -1329,6 +1405,8 @@ public:
 // GetLine
 void GetLine(XDataEl &val, LString &ls);
 
+#ifdef USEMSV_MSVCORE
+
 MString GetLine(XDataEl &val){
 	if(!val._a) return MString();
 	LString ls;
@@ -1379,3 +1457,170 @@ void GetLine(XDataEl &val, LString &ls){
 		ls+"]";
 	return ;
 }
+
+#endif
+
+
+class JsonEncode{
+	UList<XDataEl, 0, 1, S16K> data;
+	LString sdata;
+	XDataEl *base, *pose;
+	int size;
+
+public:
+	JsonEncode(){
+		base = 0;
+		pose = 0;
+		size = 0;
+	}
+
+	XDataEl* Up(VString name){
+		if(!base)
+			base = data.Add();
+
+		if(!pose)
+			pose = base;
+
+		XDataEl *el = GetV(name);
+		if(el)
+			return pose = el;
+
+		el = AddV(pose);
+		el->key.setu(sdata.Add(name, name, 1), name);
+		
+		return pose = el;
+	}
+
+	XDataEl* operator()(VString k, XDataEl *v){
+		return Set(k, v->v());
+	}
+
+	XDataEl* operator()(VString k, VString v){
+		return Set(k, v);
+	}
+
+	XDataEl* Set(VString k, VString v){
+		XDataEl *el = GetV(k);
+
+		if(!el){
+			el = AddV(pose);
+			el->key.setu(sdata.Add(k, k, 1), k);
+		}
+
+		el->val.setu(sdata.Add(v, v, 1), v);
+
+		return el;
+	}
+
+	XDataEl* Down(){
+		if(!pose)
+			return 0;
+
+		if(pose)
+			pose = 0;
+
+		return pose;
+	}
+
+	XDataEl* GetV(VString name){
+		if(!pose)
+			return 0;
+
+		XDataEl *el = pose;
+		while(el){
+			if(el->n() == name)
+				return el;
+			el = el->n();
+		}
+
+		return el;
+	}
+
+	XDataEl* AddV(XDataEl *parent){ // , VString key, VString val
+		if(!parent)
+			return 0;
+
+		XDataEl *el = data.Add(); // &data.inserta();
+		
+		if(!parent->_a){
+			parent->_a = el;
+			parent->_e = el;
+		} else {
+			el->_p = parent->_e;
+			el->_p->_n = el;
+			parent->_e = el;
+		}
+
+		size ++;
+		
+		return el;
+	}
+
+	VString GetString(LString &ls){
+		ls.Clean();
+
+		//ls + "{";
+		GetString2(base->a(), ls, 1);
+		//ls + "}";
+
+		return ls;
+	}
+
+	void AddSpace(LString &ls, int sz){
+		unsigned char c[31] = "                              ";
+		while(sz > 0){
+			ls.Add(c, min(sz, 30));
+			sz -= min(sz, 30);
+		}
+	}
+
+	void GetString2(XDataEl *el, LString &ls, int level){
+		unsigned char *c;
+
+		ls + "{\r\n";
+
+		while(el){
+			// Level
+			AddSpace(ls, level * 2);
+
+			// Key
+			ls + "\"" + el->k() + "\": ";
+			
+			if(el->a())
+				GetString2(el->a(), ls, level + 1);
+			else
+				ls + "\"" + el->v() + "\"";
+
+			el = el->n();
+			
+			if(el)
+				ls + ",";
+			ls + "\r\n";
+		}
+
+		AddSpace(ls, level * 2 - 2);
+		ls + "}";
+	}
+
+	bool Save(VString file){
+		LString ls;
+		VString data = GetString(ls);
+
+		return SaveFile(file, data);
+	}
+
+	int Size(){
+		return size;
+	}
+
+	void Clear(){
+		data.Clean();
+		base = 0;
+		pose = 0;
+		size = 0;
+	}
+
+	~JsonEncode(){
+		Clear();
+	}
+};

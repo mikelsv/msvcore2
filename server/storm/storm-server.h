@@ -162,7 +162,7 @@ public:
 		}
 
 #ifdef RAIN_PRINT_ACCEPT
-		print("A:", itos(sock), " Socks: ", itos(core.Size()), "\r\n");
+		print("A:", itos(sock), " Socks: ", itos(cons.Size()), "\r\n");
 #endif
 		core->StormAddSock(el, sock);
 		return ;

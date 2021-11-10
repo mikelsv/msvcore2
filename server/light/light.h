@@ -70,6 +70,7 @@ public:
 				acc.tip=ntohl(from.sin_addr.s_addr); acc.tport=htons(from.sin_port);
 
 				Accept(acc);
+				closesocket(acc.sock);
 			}
 		}
 
@@ -79,7 +80,7 @@ public:
 	virtual int Accept(LightServerAccept &acc){
 		SString it; it.Add("LightServer(", lightserver_versions[0].ver, ", ", lightserver_versions[0].date,")");
 		send(acc.sock, it, it, 0);
-		closesocket(acc.sock);
+		//closesocket(acc.sock);
 		return 0;
 	}
 

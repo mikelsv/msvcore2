@@ -1,4 +1,8 @@
 #include <openssl/ssl.h>
+#include <openssl/ecdsa.h>
+#include <openssl/bn.h>
+//#include <openssl/ec.h>
+//#include <openssl/ossl_typ.h>
 #include <openssl/err.h>
 
 #ifndef OPENSSL_VERSION_NUMBER

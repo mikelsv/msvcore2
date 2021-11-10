@@ -15,6 +15,9 @@
 #define STORM_LISTEN_CGI_CLOSE	3
 #define STORM_LISTEN_CGI_DELETE	4
 
+#define STORM_LISTEN_CGI_PIPE	0
+#define STORM_LISTEN_CGI_SOCK	1
+
 #ifdef USEMSV_MSVCORE
 	TLock listen_cgi_lock;
 #endif
@@ -97,12 +100,17 @@ public:
 
 class listen_cgi_el{
 	PipeLine2 ppl;
+	GetHttp2 gp;
 	storm_socket sock;
 	int state;
+	int type;
+	int gp_pos;
 
 public:
 	listen_cgi_el(){
 		state = STORM_LISTEN_CGI_NONE;
+		type = STORM_LISTEN_CGI_PIPE;
+		gp_pos = 0;
 	}
 
 	int GetState(){
@@ -130,19 +138,34 @@ public:
 	}
 
 	int Run(VString cmd, VString dir = VString(), VString env = VString(), int inp = 0){
-		int r = ppl.Run(cmd, dir, env, inp);
+		int res = 0;
 
-		if(!r){
+		if(cmd.str(0, 7) == "http://" || cmd.str(0, 8) == "https://"){
+			gp.SetPost(env);
+			res = gp.Request(cmd);
+			type = STORM_LISTEN_CGI_SOCK;
+		} else {
+			res = ppl.Run(cmd, dir, env, inp);
+			type = STORM_LISTEN_CGI_PIPE;
+		}		
+
+		if(!res){
 			state = STORM_LISTEN_CGI_DELETE;
 		} else
 			state = STORM_LISTEN_CGI_READ;
 
-		return r;
+		return res;
 	}
 
 	int Work(){
-		if(ppl.Process())
-			return 1;
+		if(type == STORM_LISTEN_CGI_PIPE){
+			if(ppl.Process())
+				return 1;
+		} else {
+			int wr = ppl.StdOut().Write(gp.GetData().str(gp_pos));
+			gp_pos += wr;
+			return wr;
+		}
 		
 		return 0;
 	}

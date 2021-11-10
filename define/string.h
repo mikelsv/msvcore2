@@ -75,6 +75,9 @@ public:
 	LStringX& operator+(const int64 i);
 	LStringX& operator+(const uint64 i);
 
+	LStringX& operator+(const double i);
+	LStringX& operator+(const float i);
+
 	LStringX& operator+(const MString& string);
 	LStringX& operator+(const VString& string);
 	LStringX& operator+(const char* lpsz);
@@ -190,6 +193,22 @@ LString_Int_Template(int);
 LString_Int_Template(unsigned int);
 LString_Int_Template(int64);
 LString_Int_Template(uint64);
+
+template<int stacksize>
+LStringX<stacksize>& LStringX<stacksize>::operator+(const double i){
+	unsigned char data[S1K];
+	int s = prmf_dtos(data, S1K, i);
+	this->Add(data, s);
+	return *this;
+}
+
+template<int stacksize>
+LStringX<stacksize>& LStringX<stacksize>::operator+(const float i){
+	unsigned char data[S1K];
+	int s = prmf_dtos(data, S1K, i);
+	this->Add(data, s);
+	return *this;
+}
 
 template<int stacksize>
 LStringX<stacksize>& LStringX<stacksize>::operator+(const VString& string){ add(string, string); return *this; }

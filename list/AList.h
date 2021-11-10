@@ -461,12 +461,13 @@ private:
 	}
 
 	void FreeNode(AListAllocOListNode *node){
-		return ;
+		//return;
 
 		OMatrixTemplateDel(_a, _e, node);
-		OMatrixTemplateDel(_af, _ef, node);
+		OMatrixTemplateDelF(_af, _ef, node, _pf, _nf);
 		vec.Del(node);
 		free(node);
+		nsz --;
 
 		return ;
 	}

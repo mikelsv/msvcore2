@@ -33,7 +33,7 @@ int msl_value_test_count;
 #endif
 
 #ifdef USEMSV_MSL_TMPVAL
-#include "../msl/msl-val-tmp.h"
+#include "../msl/msl-value-tmp.h"
 #else
 #define msl_tvalue msl_value
 #endif
@@ -377,13 +377,13 @@ public:
 	}
 
 	int mysql_connect(VString host, VString user, VString pass, int port){
-		msl_extension_mysql_con * con = cons.New();
+		msl_extension_mysql_con * con = cons.NewE();
 		con->cid = cids;
 		cids += 1 + (rand() % 5);
 		if(con->con.Connect(host, user, pass, "", port ? port : 3306))
 			return con->cid;
 
-		cons.Del(con);
+		cons.Free(con);
 		return 0;
 	}
 
@@ -2258,16 +2258,18 @@ unsigned int GetLineCount(msl_value_template<B> &val){
 			if(v->k())
 				sz += 3 + v->k().sz;
 
+#ifdef MSLTOJSON_USE_NULL
 			if(!v->v())
 				sz += 4;
 			else
+#endif
 				sz += 2 + v->v().sz;
 		}
 
 		v = v->_n;
 	}
 
-	sz +=2;
+	sz += 2;
 
 	return sz;
 }
@@ -2306,12 +2308,15 @@ unsigned char* GetLine(msl_value_template<B> &val, unsigned char *to){
 				*to ++ = ':';
 			}
 
+#ifdef MSLTOJSON_USE_NULL
 			if(!v->v()){
 				memcpy(to, "null", 4);
 				to += 4;
 				//ls + "null";
 			}
-			else{
+			else
+#endif
+			{
 				//ls + "\"" + v->v() + "\"";
 				*to ++ = '"';
 				memcpy(to, v->v(), v->v());
@@ -2401,7 +2406,7 @@ TString GetLinePost(msl_value_template<B> &val){
 		p = p->_n;
 	}
 
-	return ls;
+	return TString(ls);
 }
 
 

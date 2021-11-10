@@ -515,6 +515,10 @@ public:
 		//d->stat = 0;
 		//d->cl = 0; d->rd = 0; d->wr = 0;
 
+#ifdef STORMSERVER_CORE_MODSTATE
+		listen_http_modstate.OnAccept(sock);
+#endif
+
 #ifdef STORMSERVER_PRINT_ADD
 		SString it;
 		print(it.Format("Storm Add(%d). Sockets:%d. Void: 0x%h\r\n", data->sock, sockets_count + 1, (unsigned long)data));
@@ -551,6 +555,10 @@ public:
 #ifdef STORMSERVER_PRINT_DEL
 		SString it;
 		print(it.Format("Storm Del(%d). Sockets:%d. Void: 0x%h\r\n", sdata->sock, sockets_count, (unsigned long)sdata));
+#endif
+
+#ifdef STORMSERVER_CORE_MODSTATE
+		listen_http_modstate.OnDisconnect(sdata->sock);
 #endif
 
 		// stop
@@ -657,6 +665,7 @@ public:
 			print(it.Format("===== WorkDo(%d) a_send_c %d\r\n%s===== End ====\r\n\r\n", sdata->sock, sd, Replace(line, "\7", ".")));
 	#endif
 #endif
+			sdata->ltime = time();
 
 			if(sd > 0){
 				line = line.str(sd);
@@ -1142,7 +1151,7 @@ public:
 //			*el->item = *el->item; // ^_^ please die
 
 #ifdef STORMSERVER_PRINT_DO
-			Itos it;
+			SString it;
 			print(it.Format("WorkDo(%d).\r\n", el->sock));
 #endif
 
@@ -1202,6 +1211,10 @@ public:
 		//if(el->cl&AIFOP_CLOSE && isnosend){
 		if(s_close == 1){
 			//StormDelSock(el->item, el->sock);
+#ifdef STORMSERVER_PRINT_DEL
+			SString it;
+			print(it.Format("Storm DelPrev(%d). Sockets:%d. Void: 0x%h\r\n", el->sock, sockets_count, (unsigned long)el));
+#endif
 			DelSocketData(el);
 			return 0;
 		}
@@ -1238,6 +1251,24 @@ public:
 				print(it.Format("WorkDo(%d) a_recv %d\r\n", el->sock, rsz));
 #else
 				print(it.Format("===== WorkDo(%d) a_recv_data %d\r\n%s===== End ====\r\n\r\n", el->sock, rsz, Replace(VString((char*)fbuf, rsz), "\7", ".")));
+
+				//if(rsz == 0){
+				//	//int snd = send(el->sock, "123", 3, 0);
+
+				//	int error = 0;
+				//	socklen_t len = sizeof (error);
+				//	int retval = getsockopt(el->sock, SOL_SOCKET, SO_ERROR, (char*)&error, &len);
+
+				//	struct sockaddr_in sa;
+				//	int salen = sizeof(sa);
+
+				//	int err = getpeername(el->sock, (sockaddr*)&sa, &salen);
+
+				//	if(!err)
+				//		return -1;
+
+				//	int z = 22;
+				//}
 #endif
 #endif
 				if(rsz>0)
@@ -1276,7 +1307,7 @@ public:
 	#ifndef STORMSERVER_PRINT_SEND_DATA
 				print(it.Format("WorkDo(%d) a_send_c %d / %d\r\n", el->sock, sd, rd));
 	#else
-				print(it.Format("===== WorkDo(%d) a_send  %d / %d\r\n%s===== End ====\r\n\r\n", el->sock, sd, rd, Replace(VString((char*)buff, rd), "\7", ".")));
+				print(it.Format("===== WorkDo(%d) a_send_c  %d / %d\r\n%s===== End ====\r\n\r\n", el->sock, sd, rd, Replace(VString((char*)buff, rd), "\7", ".")));
 	#endif
 #endif
 

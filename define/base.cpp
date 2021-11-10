@@ -31,6 +31,19 @@
 
 #endif
 
+#if _MSC_VER < 1700
+#ifndef htonll
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+	static inline uint64 htonll(uint64 x){
+		return (uint64)htonl((uint32_t)(x >> 32)) |
+			(uint64)htonl((uint32_t)(x & 0xffffffff)) << 32;
+	}
+#else	/* (BYTE_ORDER == LITTLE_ENDIAN) */
+	#define htonll(x) (x)
+#endif
+#endif  /* htonll */
+#endif
+
 // Time
 unsigned int time(){
 	timeb tb;

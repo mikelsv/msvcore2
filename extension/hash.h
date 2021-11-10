@@ -1,10 +1,15 @@
 // Base64
+static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
 class Base64{
 public:
 	static TString btos(const VString line);
 	static TString stob(const VString line);
 	static TString mbtos(const VString line);
 	static TString mstob(const VString line);
+
+	// Base 58
+	static TString btos58(const VString line);
 };
 
 // MD5 - 6.12.05 1.0.0 MSVSPL Specila Library

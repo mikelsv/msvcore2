@@ -166,7 +166,7 @@ void TLock::Init(){
 
 bool TLock::IsLock(){
 	DWORD thid = GetCurrentThreadId();
-	if(lock && thid != threadid)
+	if(lock && thid == threadid)
 		return 1;
 
 	return 0;
@@ -330,8 +330,12 @@ ALock::~ALock(){ if(type == 1) gl->UnLock(); else if(type == 2) tl->UnLock(); ty
 
 #ifdef USEMSV_MEMORYCONTROL
 	TLock memconlock, memconsymlock;
+
 	bool MemConLock(){ return memconlock.Lock(); }
 	bool MemConUnLock(){ return memconlock.UnLock(); }
-	bool MemConSymLock(){ return memconsymlock.Lock(); }
-	bool MemConSymUnLock(){ return memconsymlock.UnLock(); }
+	bool MemConIsLock(){ return memconlock.IsLock(); }
+
+	bool MemConSymLock(){ return memconlock.Lock(); }
+	bool MemConSymUnLock(){ return memconlock.UnLock(); }
+	bool MemConSymIsLock(){ return memconlock.IsLock(); }
 #endif

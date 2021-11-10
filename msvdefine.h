@@ -19,6 +19,10 @@
 // Include Real Strings
 #include "MString.h"
 
+#ifdef UNICODE
+	#include "crossplatform/wince-twoms.h"
+#endif
+
 // Include Temp or Thread String
 #include "TString.h"
 

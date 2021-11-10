@@ -37,10 +37,10 @@
 int print(const VString &line);
 
 // Multi Print
-inline int print(const VString &l1, const VString &l2);
-inline int print(const VString &l1, const VString &l2, const VString &l3);
-inline int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4);
-inline int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4, const VString &l5
+int print(const VString &l1, const VString &l2);
+int print(const VString &l1, const VString &l2, const VString &l3);
+int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4);
+int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4, const VString &l5
 , const VString &l6=VString(), const VString &l7=VString(), const VString &l8=VString(), const VString &l9=VString(), const VString &l10=VString());
 
 
@@ -82,3 +82,86 @@ unsigned int SaveFileAppend(VString file, VString data);
 int CopyFile(VString from, VString to);
 int MoveFile(VString from, VString to);
 int DeleteFile(VString file);
+
+// Readdir VSi
+class VSi{
+public:
+	VString key;
+	sstat64 stt;
+
+	bool isdir(){
+		return (stt.st_mode&S_IFMT) == S_IFDIR;
+	}
+
+	bool islink(){
+		return (stt.st_mode&S_IFMT) == S_IFLNK;
+	}
+
+	int64 size(){
+		return stt.st_size;
+	}
+};
+
+// Fast sort
+void myfastsort_VSiLine(IList<VSi> &list);
+
+// Readdir
+class Readdir{
+	LString ls;
+	IList<VSi> list;
+	//VSiLine line;
+
+#ifdef WIN32
+	HANDLE handle;
+#else
+	DIR *handle;
+#endif
+
+public:
+
+	Readdir();
+
+	int OpenDir(VString &path);
+	VString ReadOne(SString &ss);
+	int ReadDir(MString dir);
+
+	int Add(VString file, sstat64 &stt);
+
+#define RD_NOP		S1M
+#define RDS_NAME	1
+#define RRDS_UNAME	2
+
+	int Resort(int type = RD_NOP | RDS_NAME){
+		if(type & RD_NOP){
+			for(unsigned int i=0; i<list.Size(); i++){
+				if(list[i].key == ".")
+					list.Del(i);
+			}
+		}
+
+		myfastsort_VSiLine(list);
+		return 1;
+	}
+
+	void operator = (Readdir &rd){
+		for(unsigned int i = 0; i < rd.size(); i++){
+			Add(rd[i].key, rd[i].stt);
+		}
+		return ;
+	}
+
+	VSi& operator[](int p){
+		return list[p];
+	}
+
+	operator unsigned int(){
+		return list.Size();
+	}
+
+	unsigned int size(){
+		return list.Size();
+	}
+
+	void Clean();
+	~Readdir();
+};

@@ -3,8 +3,9 @@
 #define STORMSERVER_HTTP_SEND 2
 #define STORMSERVER_HTTP_SENDFILE 3
 #define STORMSERVER_HTTP_PROXY 4
-#define STORMSERVER_HTTP_ALIVE 5
-#define STORMSERVER_HTTP_CLOSE 6
+#define STORMSERVER_HTTP_WSOCK 5
+#define STORMSERVER_HTTP_ALIVE 6
+#define STORMSERVER_HTTP_CLOSE 7
 
 #ifdef USEMSV_MSVCORE
 	Versions STORMHTTPVER[]={
@@ -209,6 +210,11 @@ protected:
 				return ;
 			break;
 
+			case STORMSERVER_HTTP_WSOCK:
+				if(!AnalysWebSocket(wel, read))
+					return ;
+			break;
+
 			case STORMSERVER_HTTP_ALIVE:
 				post.Clean();
 				if(PartLineDouble(head, "Connection: ", "\r\n").compareu("keep-alive"))
@@ -230,7 +236,7 @@ protected:
 		if(wstat == STORMSERVER_HTTP_SENDFILE){
 			//print("SEND STATE: ", itos(wstat), "\r\n");
 			if(send_file.size){
-				int rd = ReadFile(send_file, send, minel(send.sz, send_file.size % S1M));
+				int rd = ReadFile(send_file, send, minel(send.sz, send_file.size));
 				send_file.size -= rd;
 
 				if(rd <= 0 || !send_file.size){
@@ -271,6 +277,33 @@ protected:
 			head.setu(h, h.sz + 4);
 			wel.readed(read, head);
 
+#ifdef STORMSERVER_CORE_MODSTATE
+			listen_http_modstate.OnHttpRequest(wel.data->sock, PartLineDoubleUp(head, "\r\Host: ", "\r\n"), PartLineO(h, "\r\n"));
+#endif
+
+			// Websocket
+			if(//PartLineDoubleUp(head, "\r\nConnection: ", "\r\n").incompareu("Upgrade")
+			//&&
+			PartLineDoubleUp(head, "\r\nUpgrade: ", "\r\n").incompareu("websocket")){
+				wstat = STORMSERVER_HTTP_WSOCK;
+				
+				VString key = PartLineDoubleUp(head, "\r\nSec-WebSocket-Key: ", "\r\n");
+				VString origin = PartLineDoubleUp(head, "\r\nOrigin: ", "\r\n");
+
+				SString ret;
+				ret.Add("HTTP/1.1 101 Switching Protocols\r\n" \
+			"Upgrade: WebSocket\r\n" \
+            "Connection: Upgrade\r\n" \
+            //"Sec-WebSocket-Origin: ", origin, "\r\n" 
+			"Sec-WebSocket-Accept: ", WebSocketAcceptKey(key), "\r\n" \
+			//"Sec-WebSocket-Protocol: chat" "\r\n" 
+            "\r\n");
+
+				wel.send(ret);
+				return 1;
+			}			
+
+			// GET | POST
 			h = PartLineO(head, " ");
 			if(h == "POST")
 				wstat = STORMSERVER_HTTP_POST;
@@ -364,13 +397,16 @@ protected:
 			status.code = 404;
 			status.vcode = "Not Found";
 
-			SendHeader(wel, status, "", 13);
+			VString data = "Content-Type: text/html; charset=UTF-8\r\n";
+
+			SendHeader(wel, status, data, 13);
 			wel.send("404 Not Found");
 			//AnalysSendWriteLog(wel, host, 404, it.ret.sz + 13);
 			return 1;
 		}
 
 		// ifproxy
+/* Bad code
 		if(VString xip = PartLineDouble(head, "X-Forwarded-For: ", "\r\n")){
 			ConfLineOption *opt = 0;
 
@@ -389,7 +425,7 @@ protected:
 				wel.send(status.vcode);
 				return 1;
 			}
-		}
+		}*/
 
 		// dirindex & rootpath
 		VString rootpath = listen_http_options.GetOptionGlobal("DocumentRoot", status.host);
@@ -635,7 +671,9 @@ protected:
 			status.code = 404;
 			status.vcode = "Not Found";
 
-			SendHeader(wel, status, "", 13);
+			VString data = "Content-Type: text/html; charset=UTF-8\r\n";
+
+			SendHeader(wel, status, data, 13);
 			wel.send("404 Not Found");
 			//AnalysSendWriteLog(wel, host, 404, it.ret.sz + 13);
 			return 1;
@@ -645,8 +683,8 @@ protected:
 			status.vcode = "Moved Permanently";
 			ilink.Link(url);
 
-			it.Format("Location: %s%s/\r\n"
-			, ilink.path, ilink.file
+			it.Format("Location: %s%s/%s%s\r\n"
+				, ilink.path, ilink.file, ilink.iquest ? "?" : "", ilink.iquest
 			);
 
 			SendHeader(wel, status, it, 0);
@@ -674,7 +712,9 @@ protected:
 				status.code = 404;
 				status.vcode = "Not Found";
 
-				SendHeader(wel, status, "", 13);
+				VString data = "Content-Type: text/html; charset=UTF-8\r\n";
+
+				SendHeader(wel, status, data, 13);
 				wel.send("404 Not Found");
 				return 0;
 			}
@@ -704,8 +744,16 @@ protected:
 
 		VString type = listen_http_options.GetOptionGlobal("DefaultCharset", ext);
 		SString itct;
+
+		VString mtype = "";
+		if(ilink.ext() == "html")
+			mtype = "text/html";
+		else if(ilink.ext() == "js")
+			mtype = "text/javascript";
+
+		//if(ilink.ext() == "html")
 		itct.Format("Content-type: %s; charset=%s\r\n"
-			, ilink.ext() == "html" ? "text/html" : ""
+			, mtype
 			, type ? type : "UTF-8"
 		);
 
@@ -738,6 +786,7 @@ protected:
 			it2.Format("Content-Length: %d\r\n", datasize);
 
 		it.Format("HTTP/1.1 %d %s\r\n"
+			"Access-Control-Allow-Origin: *\r\n"
 			"Server: StormServer/%s(%s)\r\n"
 			"Date: %s\r\n"
 			"%s"
@@ -945,6 +994,80 @@ protected:
 		wel.send("500 Server Error");
 
 		return 1;
+	}
+
+	virtual int AnalysWebSocket(storm_work_el &wel, VString &read){
+		int r, opcode;
+		VString msg;
+
+		while(1){
+			r = WebSocketDecodeData(read, opcode, msg);
+			if(r < 0)
+				return 0;
+
+			if(r == 0){
+				wel.close();
+				return 0;
+			}
+
+			AnalysWebSocketData(wel, opcode, msg);
+			wel.readed(read, r);
+
+			if(!read)
+				return 0;
+		}
+		return 0;
+	}
+
+	virtual void AnalysWebSocketData(storm_work_el &wel, int opcode, VString read){
+		switch(opcode){
+			case LWSOC_STRING:{
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
+				wel.send(ret);
+			}
+			break;
+
+			case LWSOC_BINARY:{
+				// Get ModState
+#ifdef STORMSERVER_CORE_MODSTATE
+				if(read.sz == 8){
+					unsigned int code, pos;
+					code = *(unsigned int*)read.data;
+					pos = *(unsigned int*)(read.data + 4);
+
+					if(code == 0xc04eda1a){
+						char data[S16K];
+						unsigned int d[2] = { 0xc04e1e31, pos };
+
+						memcpy(data, &d, 8);
+						VString line(data + 8, S8K);
+
+						unsigned int r = listen_http_modstate.OnRead(pos, line);
+						MString ret = WebSocketEncodeData(LWSOC_BINARY, VString(data, r + 8));
+						wel.send(ret);
+						return ;
+					}
+				}
+#endif
+
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
+				wel.send(ret);
+			}
+			break;
+
+			case LWSOC_PING:{
+				MString ret = WebSocketEncodeData(LWSOC_PONG, MString());
+				wel.send(ret);
+			}
+			break;
+
+			case LWSOC_CLOSE:
+			default:
+				wel.close();
+			break;
+		}
+
+		return ;
 	}
 
 	int CloseConnection(storm_work_el &wel, listen_http_sendstatus &status, VString data){

@@ -351,7 +351,7 @@ int SendDataRing::Write(VString b){
 
 	while(1){
 		unsigned int f = buf.sz - IsRead();
-		unsigned int s = minel(f, b.sz - as);
+		unsigned int s = minel(minel(f, (b.sz - as)), (buf.sz - pwrite));
 		if(!s)
 			break;
 

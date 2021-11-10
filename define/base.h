@@ -136,7 +136,11 @@ inline unsigned char upd(const unsigned char ch){ return ((ch>=97 && ch<=122 || 
 	}
 
 // Del
-#define OMatrixTemplateDel(_a, _e, el)							\
+#define OMatrixTemplateDel(_a, _e, el)								\
+	if(el->_n) el->_n->_p=el->_p; else if(el==_e) _e=el->_p;		\
+	if(el->_p) el->_p->_n=el->_n; else if(el==_a) _a=el->_n;
+
+#define OMatrixTemplateDelF(_a, _e, el, _p, _n)						\
 	if(el->_n) el->_n->_p=el->_p; else if(el==_e) _e=el->_p;		\
 	if(el->_p) el->_p->_n=el->_n; else if(el==_a) _a=el->_n;
 

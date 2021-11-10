@@ -182,6 +182,9 @@ void MCookie::Set(VString line, VString _domain, VString _path){
 	domain = PartLineO(domain, ":");
 
 	// username=aaa13; expires=Friday, 31-Dec-99 23:59:59 GMT; path=/; domain=www.citforum.ru;\n\n";
+	// remixlang=0; expires=Fri, 12 Jan 2018 12:22:50 +0300; path=/; domain=.vk.com
+
+
 	while(line){
 		dspacev(line, 7);
 		o=PartLine(line, line, ";");
@@ -742,6 +745,14 @@ int GetHttpReq::Recv(SOCKET sock){
 		if(rcv < 0)
 			return 0;
 
+		if(!rcv){
+			if(conlen == -1){
+				data = (VString)ls;
+				return 1;
+			}
+			return 0;
+		}
+
 		arecv += rcv;
 		bufs += rcv;
 		tm = ltm;
@@ -750,7 +761,7 @@ int GetHttpReq::Recv(SOCKET sock){
 			ls.add((char*)buf, bufs);
 			bufs = 0;
 
-			if(conlen <= ls.Size()){
+			if(conlen >= 0 && conlen <= ls.Size()){
 				data = (VString)ls;
 				return 1;
 			}
@@ -777,7 +788,7 @@ int GetHttpReq::Recv(SOCKET sock){
 		ls.add((char*)buf, bufs);
 		bufs = 0;
 
-		if(conlen <= ls.Size()){
+		if(conlen >= 0 && conlen <= ls.Size()){
 			data = (VString)ls;
 			return 1;
 		}

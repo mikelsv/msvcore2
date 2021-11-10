@@ -174,9 +174,9 @@ void ConfLineOptions::Read(VString &data, ConfLineOption *parent, int &lnum, int
 			int up = 0, down = 0;
 
 			// up
-			if(val && val.endo() == '{'){
+			if(val && val.endo() == '{' && key[0] != '#'){
 				val.sz--; up = 1;
-			}else if(!val && key.endo() == '{'){
+			}else if(!val && key.endo() == '{' && key[0] != '#'){
 				key.sz--; up = 1;
 			}
 
@@ -206,8 +206,10 @@ void ConfLineOptions::Read(VString &data, ConfLineOption *parent, int &lnum, int
 			lopt->key = NewOptionVal(key);
 			lopt->val = NewOptionVal(val);
 
+			unsigned int tnum = lnum;
+
 			if(up)
-			Read(data, lopt, lnum, level + 1);
+				Read(data, lopt, lnum, level + 1);
 
 			if(key == "include-conf"){
 				if(level){

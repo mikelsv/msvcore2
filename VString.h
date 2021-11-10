@@ -136,6 +136,11 @@ bool cmp(const char*str, const char*strt, unsigned int sz);
 bool cmp(unsigned char*str, unsigned char*strt, unsigned int sz);
 bool cmpf(char*str, char*strt, unsigned int sz);
 
+// Compare
+bool compare(VString string, VString stringt);
+bool compareu(VString string, VString stringt);
+bool incompare(VString string, VString stringt);
+
 // rts
 int rts(unsigned char *to, char fr, unsigned char *&line);
 int rtns(unsigned char *to, char fr, unsigned char *&line);
@@ -189,6 +194,9 @@ unsigned int prmf_btoh(unsigned char *ret, unsigned int rsz, unsigned char*line,
 unsigned int prmf_replace(unsigned char *ret, unsigned int rsz, unsigned char*line, unsigned int sz, unsigned char *fr, unsigned int frs, unsigned char *toc, unsigned int tos, unsigned int cnt);
 unsigned int prmf_httptoval(unsigned char *ret, unsigned int rsz, unsigned char*line, unsigned int sz, int np = 0);
 unsigned int prmf_pcre_result(unsigned char *ret, unsigned int rsz, unsigned char *data, unsigned int sz, unsigned char *url, unsigned int urlsz, size_t *arr, int arrsz, int opt, VString sqa);
+//
+unsigned int prmf_stoutf(unsigned char *ret, unsigned int rsz, unsigned short* line, unsigned int sz);
+
 
 // default defines for prmf
 #define prmdadd(v){ if(ret+v.sz<=rt) memcpy(ret, v, v); ret+=v.sz; }
@@ -224,3 +232,4 @@ int stoi(char*line, unsigned int size=0, int radix=10);
 unsigned int stoui(char*line, unsigned int size=0, int radix=10);
 int64 stoi64(char*val, unsigned int size=0, int radix=10);
 double stod(char*line, unsigned int size=0, int radix=10);
+double stod_e(const char *str, char *end);

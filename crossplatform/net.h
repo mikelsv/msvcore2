@@ -6,11 +6,16 @@ bool ifrecv(SOCKET sock, unsigned int wt = 0);
 bool ifsend(SOCKET sock, unsigned int wt = 0);
 void gettip(SOCKET sock, unsigned int &ip, unsigned short &port);
 void getcip(SOCKET sock, unsigned int &ip, unsigned short &port);
+unsigned int crc32(unsigned char *buf, unsigned long len);
 
 // ip <=> int
 unsigned int ipstoi(const VString& line);
 unsigned int ipstoi(char*data, unsigned int sz);
 MString ipitos(unsigned int val);
+
+// Http
+TString HttpToVal(VString line);
+TString HttpToValNoPlus(VString line);
 
 // Connect Ip
 class ConIp{

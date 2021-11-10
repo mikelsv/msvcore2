@@ -5,6 +5,16 @@ void storm_work_el::send(VString line){
 	int sd = item->storm_socket_send(data->sock, line, line, 0);
 	listen_http_modstate.OnSend(sd);
 
+#ifdef STORMSERVER_PRINT_SEND
+				SString it;
+	#ifndef STORMSERVER_PRINT_SEND_DATA
+				print(it.Format("WorkDo(%d) a_send_wel %d / %d\r\n", data->sock, sd, line.size()));
+	#else
+				print(it.Format("===== WorkDo(%d) a_send_wel  %d / %d\r\n%s===== End ====\r\n\r\n", data->sock, sd, line.size(), Replace(line, "\7", ".")));
+	#endif
+#endif				
+
+
 	if(sd > 0){
 		line.data += sd;
 		line.sz -= sd;

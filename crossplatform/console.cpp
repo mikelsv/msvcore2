@@ -674,6 +674,8 @@ class PipeLine2{
 	// Options
 	int iscont; // Continue
 	int isinput; // Input
+	int isview; // Show console
+	int outbuff; // output buffer size
 
 	// Result
 	SendDataRing input, output, errput;
@@ -706,6 +708,8 @@ public:
 
 #ifdef WIN32
 		newstdin = 0; newstdout = 0; newstderr = 0; write_stdin = 0; read_stdout = 0; read_stderr = 0;
+		isview = SW_HIDE;
+		outbuff = 0;
 #endif
 	}
 
@@ -725,7 +729,19 @@ public:
 		isinput = 0;
 	}
 
+	void ContineProc(int val){
+		iscont = val;
+	}
+
+	void SetOutBuffSize(int val){
+		outbuff = val;
+	}
+
 #ifdef WIN32
+
+	void SetView(int view){
+		isview = view;
+	}
 
 	int Run(VString cmd, VString dir = VString(), VString env = VString(), int isinput = 0){
 		cputime = 0;
@@ -753,7 +769,8 @@ public:
 			return 0;
 		}
 
-		if(!CreatePipe(&read_stdout, &newstdout, &sa, 0)){ //создаем пайп для stdout
+		if(!CreatePipe(&read_stdout, &newstdout, &sa, outbuff)){ //создаем пайп для stdout
+		//if(!CreateNamedPipe("", PIPE_ACCESS_DUPLEX, FILE_FLAG_WRITE_THROUGH, &read_stdout, &newstdout, &sa, outbuff)){ //создаем пайп для stdout
 			ErrorMessage("CreatePipe");
 			CloseHandle(newstdin);
 			CloseHandle(write_stdin);
@@ -763,7 +780,7 @@ public:
 			return 0;
 		}
 
-		if(!CreatePipe(&read_stderr, &newstderr, &sa, 0)){ //создаем пайп для stdout
+		if(!CreatePipe(&read_stderr, &newstderr, &sa, outbuff)){ //создаем пайп для stdout
 			ErrorMessage("CreatePipe");
 			CloseHandle(newstdin);
 			CloseHandle(write_stdin);
@@ -777,6 +794,11 @@ public:
 			return 0;
 		}
 
+		//int hCrt = _open_osfhandle((long)GetStdHandle((DWORD)read_stdout), 4);
+		//FILE *f = (::_fdopen(hCrt, "w"));
+		//::setvbuf(f, NULL, _IONBF, 0); 
+		//fclose(f);
+
 		//создаем startupinfo для дочернего процесса
 		GetStartupInfo(&si);
 
@@ -784,14 +806,15 @@ public:
 		// STARTF_USESTDHANDLES управляет полями hStd*.
 		// STARTF_USESHOWWINDOW управляет полем wShowWindow.
 
-		si.dwFlags = STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
-		si.wShowWindow = SW_HIDE;
+		si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+		si.wShowWindow = isview;
 		si.hStdInput = newstdin;	 //подменяем дескрипторы для
 		si.hStdOutput = newstdout;	 // дочернего процесса
 		si.hStdError = newstderr;
 
 		SString scmd(cmd), sdir(dir);
 
+		// 
 		if(!CreateProcess(NULL, MODUNICODE(scmd), NULL, NULL, TRUE, CREATE_NEW_CONSOLE, env, MODUNICODE(sdir), &si, &pi)){
 			//il.GetPath()+il.file, il.iquest
 			ErrorMessage("CreateProcess");
@@ -818,6 +841,9 @@ public:
 		unsigned char buf[S8K];
 		DWORD bread, bwrite, avail, rd;
 		DWORD ec;
+
+		//::FlushConsoleInputBuffer(read_stdout);
+		//::FlushFileBuffers(read_stdout);
 
 		//основной цикл программы
 		while(1){
@@ -888,8 +914,14 @@ public:
 
 		FILETIME StartTime, EndTime;
 		FILETIME KernelTime, UserTime;
+		DWORD ec;
 		
 		state = PIPELINE_STATE_NONE;
+
+		GetExitCodeProcess(pi.hProcess, &ec);
+		if(ec == STILL_ACTIVE){
+			TerminateProcess(pi.hProcess, 0);
+		}
 
 		GetProcessTimes(pi.hProcess, &StartTime, &EndTime, &KernelTime, &UserTime);
 		kerneltime = *(int64*)&KernelTime / 10;

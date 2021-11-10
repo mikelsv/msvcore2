@@ -1,4 +1,4 @@
-#pragma comment(lib,"../../mysql-connector-c-6.1.6/lib/libmysql.lib") 
+#pragma comment(lib,"../../mysql-connector-c-6.1.10-win32/lib/libmysql.lib") 
 
 #ifdef WIN32
 #include "mysql.h"
@@ -70,6 +70,10 @@ public:
 		status = MSQLS_CONNECTED;
 
 		return 1;
+	}
+
+	int IsConnect(){
+		return status == MSQLS_CONNECTED;
 	}
 
 	int SelectDB(VString db){

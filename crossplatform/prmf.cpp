@@ -511,3 +511,64 @@ unsigned int prmf_pcre_result(unsigned char *ret, unsigned int rsz, unsigned cha
 
 	return ret - aret;
 }
+
+
+
+// itos
+unsigned int prmf_stoutf(unsigned char *ret, unsigned int rsz, unsigned short* line, unsigned int sz){
+	unsigned char *aret=ret, *rt=ret ? ret+rsz : 0; // define
+	unsigned short *ln = line, *to = ln + sz;
+
+	while(ln < to){
+		unsigned int chr = *ln;
+
+		if(chr < 0x80){
+			if(ret < rt)
+				*ret = (char)chr;
+			ret ++;
+		}
+		else if(chr < 0x800){
+			if(ret < rt)
+				*ret = 192 + (chr >> 6);
+			ret ++;
+
+			if(ret < rt)
+				*ret = 128 + (chr & 63);
+			ret ++;
+		}
+		else if(chr < 0x10000){
+			if(ret < rt)
+				*ret = 224 + (chr >> 12);
+			ret ++;
+
+			if(ret < rt)
+				*ret = 128 + ((chr >> 6) & 63);
+			ret ++;
+			
+			if(ret < rt)
+				*ret = 128 + (chr & 63);
+			ret ++;
+		}
+		else if(chr <= 0x1fffff){
+			if(ret < rt)
+				*ret = 240 + (chr >> 24);
+			ret ++;
+
+			if(ret < rt)
+				*ret = 128 + ((chr >> 12) & 63);
+			ret ++;
+
+			if(ret < rt)
+				*ret = 128 + ((chr >> 6) & 63);
+			ret ++;
+
+			if(ret < rt)
+				*ret = 128 + (chr & 63);
+			ret ++;
+		}
+
+		ln ++;
+	}
+
+	return ret - aret;
+}

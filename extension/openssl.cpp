@@ -1,6 +1,11 @@
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#if _MSC_VER == 1900
+	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\VS\\2015\\libssl.lib")
+	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\VS\\2015\\libcrypto.lib") 
+#else
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libssl.lib")
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libcrypto.lib") 
+#endif
 #else
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\ssleay32.lib") 
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libeay32.lib") 
@@ -1051,4 +1056,340 @@ free_all:
     EVP_PKEY_free(pkey);
 
 	return (ret > 0);
+}
+
+
+
+// ECDSA
+void EcdsaCreateSecretKey(TString &sec){
+	// generate secret key
+
+	sec.Clean();
+
+	EC_KEY *key = EC_KEY_new_by_curve_name(NID_secp256k1);
+	if(!key)
+		return ;
+
+	if(!EC_KEY_generate_key(key)){
+		EC_KEY_free(key);
+		return ;
+	}
+
+	//int sz = i2d_ECPrivateKey(key, 0);
+
+	//if(!sec.Reserve(sz)){
+	//	EC_KEY_free(key);
+	//	return ;
+	//}
+
+	//int ret = i2d_ECPrivateKey(key, &sec.data);
+	//if(ret <= 0){
+	//	EC_KEY_free(key);
+	//	sec.Clean();		
+	//	return ;
+	//}
+
+	const BIGNUM *skey = EC_KEY_get0_private_key(key);
+	if(!skey){
+		EC_KEY_free(key);
+		return ;
+	}
+
+	char* hkey = BN_bn2hex(skey);
+    if(hkey && sec.set(hkey) && sec)
+		{}
+	else
+		sec.Clean();
+
+	EC_KEY_free(key);
+
+	return ;
+}
+
+TString EcdsaCreatePublicKey(VString sec){
+	// generate public key
+	TString pub;
+
+	if(!sec)
+		return TString();
+
+	EC_KEY *key = EC_KEY_new_by_curve_name(NID_secp256k1);
+	if(!key)
+		return TString();
+
+	BIGNUM *bnkey = BN_new();
+
+	if(!BN_hex2bn(&bnkey, sec)){
+		EC_KEY_free(key);
+		BN_free(bnkey);
+		return TString();
+	}
+
+	if(!EC_KEY_set_private_key(key, bnkey)){
+		EC_KEY_free(key);
+		BN_free(bnkey);
+		return TString();
+	}
+
+	// Generate public key
+	const EC_GROUP *group = EC_KEY_get0_group(key);
+	EC_POINT *pkey = EC_POINT_new(group);
+
+	if (!EC_POINT_mul(group, pkey, bnkey, NULL, NULL, NULL))
+       printf("Error at EC_POINT_mul.\n");
+
+     EC_KEY_set_public_key(key, pkey);
+
+	 const EC_POINT *bpkey = EC_KEY_get0_public_key(key);
+	 char *hkey = EC_POINT_point2hex(group, bpkey, POINT_CONVERSION_UNCOMPRESSED, 0);
+
+	 //char *hkey = EC_POINT_point2hex(group, pkey, 4, 0);
+
+	if(hkey && pub.set(hkey) && pub)
+		{}
+	else
+		pub.Clean();
+
+
+	EC_KEY_free(key);
+
+	return pub;
+}
+
+void EcdsaCreateKeys(TString &pub, TString &sec){
+	EcdsaCreateSecretKey(sec);
+	pub = EcdsaCreatePublicKey(sec);
+	return ;
+}
+
+TString EcdsaGetAddr(VString pub){
+	MHash mh(MHASHT_SHA256);
+	TString sha, rmd, addr, res;
+
+	sha = mh.FastH(MHASHT_SHA256, htob(pub));
+	rmd = mh.FastH(MHASHT_RMD160, htob(sha));
+	addr.Add("00", rmd);
+	sha = mh.FastH(MHASHT_SHA256, htob(addr));
+	sha = mh.FastH(MHASHT_SHA256, htob(sha));
+
+	addr.Add(addr, sha.str(0, 8));
+	res = Base64::btos58(htob(addr));
+
+	return res;
+}
+
+
+// Test Bitcoin Address
+void TestBitconAddress(){
+	print("Test Bitcoin Address.\r\n");
+
+	MHash mh(MHASHT_SHA256);
+	TString pub, sec, s256, r160, net, seven, addr, addrb;
+	VString res;
+
+	EcdsaCreateKeys(pub, sec);
+	print("ECDSA Priv: ", sec, "\r\n", "Pub: ", pub, "\r\n");
+	
+	s256 = mh.FastH(MHASHT_SHA256, htob(pub));
+	print("2) Sha256: ", s256, "\r\n");
+
+	r160 = mh.FastH(MHASHT_RMD160, htob(s256));
+	print("3) Rmd160: ", r160, "\r\n");
+
+	net.Add("00", r160);
+	print("4) Net: ", net, "\r\n");
+
+	s256 = mh.FastH(MHASHT_SHA256, htob(net));
+	print("5) Sha256: ", s256, "\r\n");
+
+	s256 = mh.FastH(MHASHT_SHA256, htob(s256));
+	print("6) Sha256: ", s256, "\r\n");
+
+	seven = s256.str(0, 8);
+	print("7) First four bytes of 6: ", seven, "\r\n");
+	
+	addr.Add(net, seven);
+	print("8) Addr: ", addr, "\r\n");
+
+	addrb = Base64::btos58(htob(addr));
+	print("9) Base Addr: ", addrb, "\r\n");
+
+	return ;
+}
+
+
+// https://bitcoin.stackexchange.com/questions/52434/building-signed-bitcoin-transaction-in-java/52731
+class TestBitcoinTx{
+	MString data;
+
+	int ver;
+	uint64 in_count, out_count;
+
+public:
+	int ReadHex(VString line){
+		return Read(htob(line));
+	}
+
+	int Read(VString line){
+		if(line.sz < 8)
+			return 0;
+
+		unsigned char *ln = line, *to = line.endu();
+
+		// Version
+		memcpy(&ver, ln, 4);
+		ln += 4;
+
+		// Input count
+		int len = ReadVarInt(ln, to, in_count);
+		if(len < 0)
+			return 0;
+
+		ln += len;
+
+		// Read inputs
+		for(uint64 i = 0; i < in_count; i ++){
+			// Read prevous hash & index
+			if(ln + 32 + 4 > to)
+				return 0;
+
+			VString phash(ln, 32);
+			ln += 32;
+
+			unsigned int pindex;
+			memcpy(&pindex, ln, 4);
+			ln += 4;
+
+			// Script
+			if(ln + 1 > to)
+				return 0;
+
+			unsigned int slen = 0;
+			memcpy(&slen, ln, 1);
+			ln += 1;
+
+			if(ln + slen > to)
+				return 0;
+
+			VString script(ln, slen);
+
+			ln += slen;
+
+			// Sequence
+			if(ln + 4 > to)
+				return 0;
+
+			unsigned int seq = 0;
+			memcpy(&seq, ln, 4);
+			ln += 4;
+		}
+
+		// Output count
+		len = ReadVarInt(ln, to, out_count);
+		if(len < 0)
+			return 0;
+
+		ln += len;
+
+		for(uint64 i = 0; i < out_count; i ++){
+			// Pay 
+			if(ln + 4 > to)
+				return 0;
+
+			uint64 pay = 0;
+			memcpy(&pay, ln, 8);
+			ln += 8;
+
+			// Script len
+			uint64 slen = 0;
+
+			len = ReadVarInt(ln, to, slen);
+			if(len < 0)
+				return 0;
+
+			ln += len;
+
+			if(ln + slen > to)
+				return 0;
+
+			VString script(ln, slen);
+
+			ln += slen;
+		}
+
+		// Lock time
+		if(ln + 4 > to)
+			return 0;
+
+		unsigned int ltime = 0;
+		memcpy(&ltime, ln, 4);
+		ln += 4;
+
+		if(ln != to)
+			return 0;
+
+		return 1;
+	}
+
+	int ReadVarInt(unsigned char *ln, unsigned char *to, uint64 &res){
+		if(*ln < 0xFD && ln + 1 <= to){
+			res = *ln;
+			return 1;
+		} else if(*ln == 0xFD && ln + 3 <= to){
+			res = *(unsigned short*)(ln + 1);
+			return 3;
+		} else if(*ln == 0xFE && ln + 5 <= to){
+			res = *(unsigned int*)(ln + 1);
+			return 5;
+		} else if(*ln == 0xFF && ln + 9 <= to){
+			res = *(uint64*)(ln + 1);
+			return 9;
+		}
+
+		return -1;
+	}
+
+
+};
+
+void TestBitcoinSig(){
+	TestBitcoinTx tx;
+	MHash mh(MHASHT_SHA256);
+	VString s;
+	int res;
+		
+	s = "0100000001e468833270cf713f3bbccc62b7b5b0fc0b0a4570608718530816795a6589f322000000008a473044022051646b77924f6bb7c411c5aa890110ab55db8812b8998fe24c8bdce39795ebd602200bc4de18fd5524ad8b946ee57604424e2b943ef2a14fc7199a7853dda0743cbe014104b97c679207532e0f4ee2515aedaba5f87700bbe0138f7457baa58e89a53153823ab29632e6c3c804ecaab5913656512339792479a1b898b7e5dc31f075ff8660ffffffff0176df1710000000001976a91448ddfd3891f3f422d5c3c9c25e35b382667fc6e688ac00000000";
+	s = "0100000001e468833270cf713f3bbccc62b7b5b0fc0b0a4570608718530816795a6589f322000000001976a91448ddfd3891f3f422d5c3c9c25e35b382667fc6e688acffffffff0176df1710000000001976a91448ddfd3891f3f422d5c3c9c25e35b382667fc6e688ac00000000";
+	//s = "01000000018dd4f5fbd5e980fc02f35c6ce145935b11e284605bf599a13c6d415db55d07a1000000001976a91446af3fb481837fadbb421727f9959c2d32a3682988acffffffff0200719a81860000001976a914df1bd49a6c9e34dfa8631f2c54cf39986027501b88ac009f0a5362000000434104cd5e9726e6afeae357b1806be25a4c3d3811775835d235417ea746b7db9eeab33cf01674b944c64561ce3388fa1abd0fa88b06c44ce81e2234aa70fe578d455dac0000000";
+	//res = tx.ReadHex(s);
+
+	TString h, sha, ret;
+	//h.Add(htob(s), htob("01000000"));
+	//mh.Add(h);
+	//mh.Finish();
+	//sha = mh.Get();
+
+
+
+
+	sha = mh.FastH(MHASHT_SHA256, htob(h.Add(s, "01000000")));
+	sha = mh.FastH(MHASHT_SHA256, htob(sha));
+	//sha = mh.FastH(MHASHT_SHA256, h);
+
+	//VString q = "083867478cb0d1d8bb864175bbc49728cffcc114bc2e762c6df64f2c965a9a66";
+	//VString q = "405a1f95ed042176c6360a290efd59de8926218d6290cd555b2c5d98bb2e2ace";
+
+	
+
+	// sha
+	// 7ceb9e6
+	// cb8cd64
+
+	// ret
+	// e6c24a33
+	// c55ff445
+
+
+
+	return ;
 }

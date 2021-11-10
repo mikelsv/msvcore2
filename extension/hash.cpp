@@ -26,25 +26,47 @@ TString Base64::btos(const VString line){
 }
 
 TString Base64::stob(const VString line){
-	TString ret; ret.Reserve(line.size()*8/6+3, 0);
-	unsigned char*l=line.uchar(), *ln=l, *to=ln+line.size(), *r=ret.uchar(); int i=0; unsigned short s=0, t;
+	TString ret;
+	ret.Reserve(line.size() * 8 / 6 + 3, 0);
 
-	while(ln<to){
-		//*r+= ((*(unsigned short*)ln) >> (i%8))&63;
-		//s+= (((*(unsigned short*)ln) >> (i%8))&63) << ( (i%8<=6) ? 8-6-(i%8) : 0)+8;
+	unsigned char *ln = line.uchar(), *to = ln + line.size(), *r = ret.uchar();
+	//int i = 0; unsigned short s = 0, t;
 
-		*((char*)&t+1)=*ln; *((char*)&t)=*(ln+1);
-		*r= (t >> (8 + ((i%8<=6) ? 8-6-(i%8) : 0))&63); //&(63<<8) ;//<< ( +8
-		//*r=*((char*)&s+1); s=s<<8;
-		if(i%8+6>=8) ln++; r++; i+=6;
-	} //if(i%8) r--; if(i%8) to++;
+	while(ln + 3 <= to){
+		r[0] = cb64[ln[0] >> 2];
+		r[1] = cb64[((ln[0] & 0x03) << 4) | ((ln[1] & 0xf0) >> 4)];
+		r[2] = cb64[((ln[1] & 0x0f) << 2) | ((ln[2] & 0xc0) >> 6)];
+		r[3] = cb64[ln[2] & 0x3f];
 
-	to=r; r=ret.uchar();
-	while(r<to){ *r=cb64[*r]; r++; }
-	if(i%8==4) {*r='='; r++; *r='='; r++; } if(i%8==2) {*r='='; r++;}
+		ln += 3;
+		r += 4;
+	}
 
-	//ret.resize(r-ret.uchar());
-	ret.sz = r-ret.uchar();
+	if(int s = to - ln){
+		*r ++ = cb64[ln[0] >> 2];
+
+		if(s > 1){
+			*r ++ = cb64[((ln[0] & 0x03) << 4) | ((ln[1] & 0xf0) >> 4)];
+
+			if(s > 2){
+				*r ++ = cb64[((ln[1] & 0x0f) << 2) | ((ln[2] & 0xc0) >> 6)];
+				*r ++ = '=';
+			} else {
+				*r ++ = cb64[((ln[1] & 0x0f) << 2)];
+				*r ++ = '=';
+			}
+
+		} else {
+			*r ++ = cb64[((ln[0] & 0x03) << 4)];
+			*r ++ = '=';
+			*r ++ = '=';
+		}
+
+		//ln += 3;
+		//r += 4;
+	}
+
+	ret.sz = r - ret.uchar();
 	return ret;
 }
 
@@ -72,6 +94,49 @@ unsigned char*l=line.uchar(), *ln=l, *to=ln+line.size(), *r=ret.uchar(); int i=0
 	to=r; r=ret.uchar(); while(r<to){ *r=cb64[*r]; r++; }
 	//ret.resize(r-ret.uchar());
 	ret.sz = r-ret.uchar();
+	return ret;
+}
+
+TString Base64::btos58(const VString line){
+	TString ret, tmp;
+
+	
+	
+	// Get temp buffer
+	int zsz = 0;
+
+	while (zsz < line.sz && !line[zsz])
+		++zsz;
+
+	int tsz = (line.size() - zsz) * 138 / 100 + 1;
+	tmp.Reserve(tsz, 0);
+	
+	int carry, high = tsz - 1, j;
+	unsigned char *buf = tmp;
+	//ret.Reserve(line.size() * 256 / 58);
+
+	unsigned char *ln = line.uchar(), *to = ln + line.size(), *r;
+	unsigned short s = 0;
+	int i = 0;
+
+	while(ln<to){
+		for(carry = *ln, j = tsz - 1; (j > high) || carry; --j){
+			carry += 256 * buf[j];
+			buf[j] = carry % 58;
+			carry /= 58;
+		}
+
+		ln ++;
+		high = j;
+	}
+
+	//for (i = 0; i < tsz && !buf[i]; ++i);
+
+	r = ret.Reserve(tsz);
+
+	for (i; i < tsz; ++i)
+		*r++ = b58digits_ordered[buf[i]];
+
 	return ret;
 }
 

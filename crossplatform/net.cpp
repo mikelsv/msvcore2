@@ -53,6 +53,21 @@ void getcip(SOCKET sock, unsigned int &ip, unsigned short &port){
 	port = htons(from.sin_port);
 }
 
+unsigned int crc32(unsigned char *buf, unsigned long len){
+	unsigned long crc_table[256];
+	unsigned long crc;
+	for (int i = 0; i < 256; i++){
+		crc = i;
+		for (int j = 0; j < 8; j++)
+		crc = crc & 1 ? (crc >> 1) ^ 0xEDB88320UL : crc >> 1;
+		crc_table[i] = crc;
+	};
+	crc = 0xFFFFFFFFUL;
+	while (len--)
+		crc = crc_table[(crc ^ *buf++) & 0xFF] ^ (crc >> 8);
+	return crc ^ 0xFFFFFFFFUL;
+}
+
 
 // Connect Ip
 // ConIp class ~ //
@@ -295,8 +310,12 @@ unsigned int GetIPh(VString ipa){
 
 	char *ip = (char*)&safe;
 	//ItosX<S2K> it; it=ipa; char*ip=it.ret;
-	if(isip(ip))
-		return inet_addr(ip);
+
+	if(isip(ip)){
+		unsigned int rip;
+		if(inet_pton(AF_INET, ip, &rip) > 0)
+			return rip;
+	}
     
 	struct addrinfo *ai = 0, *pai;
 	unsigned int ipr=0;

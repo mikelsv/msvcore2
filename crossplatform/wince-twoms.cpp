@@ -1,25 +1,5 @@
 //unsigned short stosr(unsigned char v);
 
-class MStringS{
-short *data;
-unsigned int sz;
-
-public:
-MStringS(){data=0; Init();}
-~MStringS();
-void Init();
-
-MStringS(const MString string);
-MStringS(const VString string);
-MStringS(const char* string);
-MStringS(const wchar_t*);
-operator wchar_t*(){return (wchar_t*)data;}
-operator short*(){return (short*)data;}
-int size()const{return sz;}
-operator MString();
-
-};
-
 MStringS::~MStringS(){
 	free(data);
 }
@@ -72,13 +52,3 @@ MStringS::MStringS(const wchar_t*str){ if(!str){ data=0; sz=0; return ; }
 
 //MString unitostr(const short *s, const int sz);
 MStringS::operator MString(){ return stoc((unsigned short*)data, sz); }
-
-
-
-//#ifdef WINCE
-#define MODUNICODE(x) MStringS(x)
-//#define MODUNICODEV(x) MStringS(VString(x))
-#define MODUNICODEV(x, s) MStringS(VString((unsigned char*)x, s)), s
-#define MODLPWSTR	LPWSTR
-#define MODUNICODET(x) L##x
-//#define MODUNIN	MString

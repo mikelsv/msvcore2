@@ -130,6 +130,77 @@ public:
 
 };
 
+#define MSRC_NULL		0xc0de	// msrc_null_code
+#define MSRC_ACCEPT		1		// sock, client ip:port, this ip:port.
+#define MSRC_CLOSE		2		// sock
+#define MSRC_SOCKS		3		// accepted, connected, closed
+#define MSRC_HTTP_REQ	4		// sock, * GET
+#define MSRC_STATE		5		// state_http_req, state_recv_all, state_send_all
+
+unsigned int msrc_null_code = 0xc0de;
+uint64 msrc_null_test = 0xc04eda1a1e311e31; // 0xc04e da1a 1e31 1e31 // code: core data test test
+
+class modstate_ring_buffer : public TLock{
+	MString data;
+	TLock lock;
+	unsigned int pos;
+
+public:
+
+	modstate_ring_buffer(){
+		data.Reserve(S1M);
+		pos = 0;
+	}
+
+	int Write(VString line){
+		if(!line || line > S1M - 16)
+			return 0;
+
+		ALOCK(this);
+		int again = 0;
+
+		if(pos == 0)
+			again = 1;
+
+		int f = data.sz - pos;
+		int s = minel(f, line.sz);
+
+		memcpy(data.data + pos, line, s);
+		pos += s;
+		
+		if(pos >= data.sz)
+			pos = 0;
+		
+		if(line.sz != s){
+			return Write(line.str(s));
+		}
+
+		if(again){
+			again = 0;
+			Write(VString((char*)&msrc_null_code, 4));
+			Write(VString((char*)&msrc_null_test, 8));
+		}
+
+		return 1;
+	}
+
+	int Read(unsigned int from, VString line){
+		if(from >= data.sz)
+			from = from % data.sz;
+
+		ALOCK(this);
+
+		int s = (pos >= from) ? pos - from : data.sz - from;
+		int r = minel(s, line.sz);
+		
+		memcpy(line, data.data + from, r);
+
+		if(pos < from && r < line.sz)
+			return Read(from + r, line.str(r)) + r;
+
+		return r;
+	}
+};
 
 class _listen_http_modstate : public TLock{
 	// Activate State
@@ -145,14 +216,21 @@ class _listen_http_modstate : public TLock{
 	listen_http_msring<120> r_recv_hour, r_recv_min, r_recv_sec
 	, r_send_hour, r_send_min, r_send_sec;
 
+	// Core
+	int64 sock_accept, sock_conn, sock_close;
+
+	// Ring
+	modstate_ring_buffer ring;
+	unsigned int ring_time;
+
 	//struct hr_ring{ };
 	//int hrring[60];
 	//int hrring_tm, hrring_pos;
 
 
-#define LISTEN_HTTP_MODSTATE_ON if(!state_on) return ;
+#define LISTEN_HTTP_MODSTATE_ON// if(!state_on) return ;
 
-public:	
+public:
 	
 	_listen_http_modstate(){
 		state_on = 0;
@@ -167,6 +245,12 @@ public:
 //		hrring_tm = 0;
 //		hrring_pos = 0;
 //		memset(hrring, 0, sizeof(hrring));
+
+		sock_accept = 0;
+		sock_conn = 0;
+		sock_close = 0;
+
+		//WriteRing0();
 	}
 
 	int OnOff(){
@@ -177,7 +261,108 @@ public:
 		state_on = v;
 	}
 
-	void OnConnect(){
+	// Ring
+	struct modstate_ring_struct{
+		unsigned int code;
+		unsigned char data[S1K];
+		unsigned int sz;
+	};
+
+	void WriteRing(unsigned int code, VString data){
+		modstate_ring_struct rs;
+
+		// Set
+		rs.code = code;
+		rs.sz = data.sz;
+
+		if(rs.sz > S1K)
+			rs.sz = S1K;
+		
+		memcpy(rs.data, data, data.sz);
+		rs.data[rs.sz] = 0;
+
+		// Write
+		ring.Write(VString((char*)&rs, rs.sz + 4));
+
+		// Again
+		//if(ring.IsAgain()){
+		//	ring.NoAgain();
+		//	WriteRing0();
+		//}
+
+		if(ring_time + 60 < time())
+			OnWriteTime();
+	}
+
+	//void WriteRing0(){
+		//VString ring0 = "RING NULL CODE ~!@#$%^&*()_+";
+
+		//SString ss;
+		//ss.Add(VString((char*)&ring0.sz, 4), ring0);
+
+		
+	//}
+
+	void OnAccept(SOCKET sock){
+		ALOCK(this);
+		sock_accept ++;
+		sock_conn ++;
+
+//		listen_http_sendstatus status;
+		unsigned int cip, tip;
+		unsigned short cport, tport;
+		SString ss;
+
+		gettip(sock, cip, cport);
+		getcip(sock, tip, tport);
+
+		ss.Add(VString((char*)&sock, 4), VString((char*)&cip, 4), VString((char*)&cport, 2),VString((char*)&tip, 4), VString((char*)&tport, 2));
+
+		WriteRing(MSRC_ACCEPT, ss);
+	}
+
+	void OnDisconnect(SOCKET sock){
+		ALOCK(this);
+		sock_close ++;
+		sock_conn --;
+
+		VString line = VString((char*)&sock, 4);
+
+		WriteRing(MSRC_CLOSE, line);
+	}
+
+	void OnWriteTime(){
+		ALOCK(this);
+		ring_time = time();
+
+		SString ss;
+
+		ss.Add(VString((char*)&sock_accept, 8), VString((char*)&sock_conn, 8), VString((char*)&sock_close, 8));
+		WriteRing(MSRC_SOCKS, ss);
+
+		// #define MSRC_STATE		5	// state_http_req, state_recv_all, state_send_all
+		ss.Add(VString((char*)&state_http_req, 8), VString((char*)&state_recv_all, 8), VString((char*)&state_send_all, 8));
+		WriteRing(MSRC_STATE, ss);
+	}
+
+	void OnHttpRequest(SOCKET sock, VString site, VString line){
+		SString ss;
+
+		if(site.sz > 500)
+			site.sz = 500;
+		if(line.sz > 500)
+			line.sz = 500;
+
+		ss.Add(VString((char*)&sock, 4), VString((char*)&site.sz, 4), site, VString((char*)&line.sz, 4), line);
+		WriteRing(MSRC_HTTP_REQ, ss);
+	}
+
+	unsigned int OnRead(unsigned int pos, VString line){
+		return ring.Read(pos, line);
+	}
+
+	//
+	void OnConnect(){//SOCKET sock, unsigned int ip){
 		LISTEN_HTTP_MODSTATE_ON;
 
 		UGLOCK(this);

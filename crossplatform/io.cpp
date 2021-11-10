@@ -27,7 +27,7 @@ void MsvCoreAllocConsole(){
 	int msvuse_logprint_get(unsigned char * data, unsigned int sz){ int rd=msvuse_logprint.Get(data, sz); msvuse_logprint.Del(rd); return rd; }
 #endif
 
-inline int print(const VString &line){ if(!line) return 0;
+int print(const VString &line){ if(!line) return 0;
 
 #ifdef USEMSV_TCPPRINT
 	if(msvuse_tcpprint && msvuse_tcpprint_sock==0){
@@ -64,16 +64,16 @@ inline int print(const VString &line){ if(!line) return 0;
 }
 
 // Multi Print
-inline int print(const VString &l1, const VString &l2){
+int print(const VString &l1, const VString &l2){
     int r=print(l1); r=print(l2) && r; return r;
 }
-inline int print(const VString &l1, const VString &l2, const VString &l3){
+int print(const VString &l1, const VString &l2, const VString &l3){
     int r=print(l1); r=print(l2) && r; r=print(l3) && r; return r;
 }
-inline int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4){
+int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4){
 	int r=print(l1); r=print(l2) && r; r=print(l3) && r; r=print(l4) && r; return r;
 }
-inline int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4, const VString &l5
+int print(const VString &l1, const VString &l2, const VString &l3, const VString &l4, const VString &l5
 , const VString &l6, const VString &l7, const VString &l8, const VString &l9, const VString &l10){
 	int r=print(l1); r=print(l2) && r; r=print(l3) && r; r=print(l4) && r; r=print(l5) && r;
 	r=print(l6) && r; r=print(l7) && r; r=print(l8) && r; r=print(l9) && r; r=print(l10) && r; return r;
@@ -162,9 +162,21 @@ while(line<to){
 			//else if(c==2) {c=3;}
 			 //{if(m && line>ln) memcpy(ret, ln, line-ln); ret+=line-ln; ln=line; c|=2;}
 		break;
-		case '?': if(line>ln) memcpy(ret, ln, line-ln); ret+=line-ln; ln=line;
-			while(ret && *(ret-1)==32 && ret>path.uchar()) ret--;
-			if(line>ln+1) {memcpy(ret, ln, line-ln); ret+=line-ln;} line=to-1;
+		case '?':
+			if(line > ln)
+				memcpy(ret, ln, line - ln);
+			ret += line - ln;
+			ln = line;
+
+			while(ret && *(ret - 1) == 32 && ret > path.uchar())
+				ret --;
+
+			if(line > ln + 1){
+				memcpy(ret, ln, line - ln);
+				ret += line - ln;
+			}
+			
+			line = to - 1;
 		break;
 		case '%':
 			 if(line>ln) memcpy(ret, ln, line-ln); ret+=line-ln; 
@@ -176,12 +188,24 @@ while(line<to){
 		{r=((*(ret-1)&31)<<6)+(*(ret)&63); *(ret-1)=stoc(r); ret--;}
 		if(*ret<32) *ret=' '; ln=line+1; ret++;// m=1;
 		break;
-		default : if(*line<32) *line=' '; c=0; break;
+		default:
+			if(*line<32)
+				*line=' ';
+			c=0;
+		break;
 } line++; }
-if(line>ln) memcpy(ret, ln, line-ln); ret+=line-ln;
-while(ret && *(ret-1)==32 && ret>path.uchar()) ret--;
-if(path.size()==ret-path.uchar()) return path; //if(!m) return path;
-return path.str(0, ret-path.uchar());
+
+	if(line > ln)
+		memcpy(ret, ln, line - ln);
+	ret += line - ln;
+
+	while(ret && *(ret - 1) == 32 && ret > path.uchar())
+		ret --;
+
+	if(path.size() == ret - path.uchar())
+		return path; //if(!m) return path;
+
+	return path.str(0, ret - path.uchar());
 }
 
 
@@ -270,6 +294,11 @@ int64 GetFileSize(HFILE hfile){
 	int64 sz = SetFilePointer(hfile, 0, FILE_END);
 	SetFilePointer(hfile, pos, FILE_BEGIN);
 	return sz;
+}
+
+int64 GetFileSize(VString file){
+	sstat64 stt = GetFileInfo(file);
+	return stt.st_size;
 }
 
 // Dir functions
@@ -521,30 +550,12 @@ bool MakeDir(VString path, VString fold){
 }
 
 
-class VSi{
-public:
-	VString key;
-	sstat64 stt;
-
-	bool isdir(){
-		return (stt.st_mode&S_IFMT) == S_IFDIR;
-	}
-
-	bool islink(){
-		return (stt.st_mode&S_IFMT) == S_IFLNK;
-	}
-
-	int64 size(){
-		return stt.st_size;
-	}
-};
-
-
 #define READDIRSZ	64
 
 #include "sort.cpp"
 #include "ef.cpp"
 
+/*
 class Readdir{
 	LString ls;
 	IList<VSi> list;
@@ -558,12 +569,13 @@ class Readdir{
 
 
 public:
+	*/
 
-	Readdir(){
+	Readdir::Readdir(){
 		handle = 0;
 	}
 
-	int Add(VString file, sstat64 &stt){
+	int Readdir::Add(VString file, sstat64 &stt){
 		//if(line.size==line.asize()) line.Add(READDIRSZ);
 		//VString fn=file;
 		list.A();
@@ -575,7 +587,7 @@ public:
 		return list.Size();
 	}
 
-	int OpenDir(VString &path){
+	int Readdir::OpenDir(VString &path){
 		VString file;
 		char buf[S4K];
 
@@ -627,7 +639,7 @@ public:
 		return 1;
 	}
 
-	VString ReadOne(SString &ss){
+	VString Readdir::ReadOne(SString &ss){
 		if(!handle)
 			return "";
 
@@ -663,7 +675,7 @@ public:
 		return "";
 	}
 
-int ReadDir(MString dir){
+int Readdir::ReadDir(MString dir){
 	ls.Clean(); list.Clear(); sstat64 stt; /*lsstat64 st;*/ VString path, fn; int fs=0; unsigned int pos;
 char bf[S2K]; if(dir.size()>S2K-3) return 0; //memcpy(bf, dir, dir);
 MSVEF ef; ef.fcmp=1; // ILink il; il.Ilink(dir); if(!il.file){ dir+"*"; il.file="*";}
@@ -720,6 +732,8 @@ if(fn!="."){
 	return 1;}
 
 
+/*
+
 #define RD_NOP		S1M
 #define RDS_NAME	1
 #define RRDS_UNAME	2
@@ -756,7 +770,6 @@ return 1;
 		return ;
 	}
 
-
 	VSi& operator[](int p){
 		return list[p];
 	}
@@ -768,9 +781,9 @@ return 1;
 	unsigned int size(){
 		return list.Size();
 	}
+	*/
 
-
-	void Clean(){
+	void Readdir::Clean(){
 		ls.Clean();
 		list.Clear();
 
@@ -784,14 +797,40 @@ return 1;
 		}
 	}
 
-	~Readdir(){
+	Readdir::~Readdir(){
 		Clean();
 	}
 
+/*
 };
-
+*/
 
 #ifdef USEMSV_MEMORYCONTROL
+
+void msvcore_memcon_print_count(LStringX<S32K> &ls, int count_size, int mem_size, int max_size, VString name, MsvCoreMemoryControlCount &count){
+	const char s[] = "                                                                                      ";
+	const char p[] = "......................................................................................";
+
+	int64 ucount = count.acount - count.fcount;
+
+	ls + name + VString(p, max_size - name.size() + 1)
+		+ VString(p, count_size - itossz(count.acount)) + count.acount
+		+ VString(p, count_size - itossz(ucount)) + ucount
+		+ VString(p, count_size - itossz(count.fcount)) + count.fcount
+		+ "\r\n";
+
+#ifdef USEMSV_MEMORYCONTROL_INFO
+		ucount = count.amemory - count.fmemory;
+
+		ls + VString(s, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
+			+ VString(s, mem_size - itossz(count.amemory)) + count.amemory
+			+ VString(s, mem_size - itossz(ucount)) + ucount
+			+ VString(s, mem_size - itossz(count.fmemory)) + count.fmemory
+			+ "\r\n";
+#endif
+
+	return ;
+}
 
 void msvcore_memcon_print(const char* tofile){
 	MemConLock();
@@ -805,6 +844,19 @@ void msvcore_memcon_print(const char* tofile){
 	int max_size = 0;
 	int name_size;
 
+	HFILE fl = 0;
+	
+	if(tofile){
+		fl = CreateFile(tofile, O_RDWR | O_CREAT, S_IREAD | S_IWRITE); //  | S_IRGRP | S_IROTH
+		if(!ishandle(fl)){
+			MemConUnLock();
+			return ;
+		}
+
+		SetFilePointer(fl, 0, FILE_END);
+	}
+
+
 	ls + "\r\n" "Memory Control: ";
 
 	if(tofile){
@@ -814,7 +866,7 @@ void msvcore_memcon_print(const char* tofile){
 
 	ls + "\r\n";
 
-	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++)
+	for(unsigned int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++)
 		if(max_size < (name_size = strlen(MsvCoreMemoryControl.GetType(i).name)))
 			max_size = name_size;
 
@@ -836,61 +888,54 @@ void msvcore_memcon_print(const char* tofile){
 		+ "\r\n";
 
 	// Types
-	for(int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++){
+	for(unsigned int i = 0; i < MsvCoreMemoryControl.GetTypeSz(); i++){
 		MsvCoreMemoryControlType &el = MsvCoreMemoryControl.GetType(i);
-		name_size = strlen(el.name);
-
-		ls + el.name + (name_size <= max_size ? p.str(0, max_size - name_size + 1) : VString());
-		ls + p.str(0, count_size - itossz(el.acount)) + el.acount
-			+ p.str(0, count_size - itossz(el.ucount)) + el.ucount
-			+ p.str(0, count_size - itossz(el.fcount)) + el.fcount
-			+ "\r\n";
-		
-#ifdef USEMSV_MEMORYCONTROL_INFO
-		ls + s.str(0, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
-			+ s.str(0, mem_size - itossz(el.amemory)) + el.amemory
-			+ s.str(0, mem_size - itossz(el.umemory)) + el.umemory
-			+ s.str(0, mem_size - itossz(el.fmemory)) + el.fmemory
-			+ "\r\n";
-#endif
+		msvcore_memcon_print_count(ls, count_size, mem_size, max_size, el.name, el);
+//		
+//		name_size = strlen(el.name);
+//		ucount = el.acount - el.fcount;
+//
+//		ls + el.name + (name_size <= max_size ? p.str(0, max_size - name_size + 1) : VString());
+//		ls + p.str(0, count_size - itossz(el.acount)) + el.acount
+//			+ p.str(0, count_size - itossz(ucount)) + ucount
+//			+ p.str(0, count_size - itossz(el.fcount)) + el.fcount
+//			+ "\r\n";
+//		umemory = el.amemory - el.fmemory;
+//		
+//#ifdef USEMSV_MEMORYCONTROL_INFO
+//		ls + s.str(0, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
+//			+ s.str(0, mem_size - itossz(el.amemory)) + el.amemory
+//			+ s.str(0, mem_size - itossz(umemory)) + umemory
+//			+ s.str(0, mem_size - itossz(el.fmemory)) + el.fmemory
+//			+ "\r\n";
+//#endif
 
 		// Output
 		if(ls.Size() >= S32K - S4K){
 			if(!tofile)
 				print((VString) ls);
 			else
-				SaveFileAppend(tofile, (VString) ls);
+				WriteFile(fl, ls.OneLine(), ls.Size());
 
 			ls.Clean();
 		}
 	}
 
-	ls + "All " + p.str(0, max_size - 4 + 1)
-		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.acount)) + MsvCoreMemoryControl.acount
-		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.ucount)) + MsvCoreMemoryControl.ucount
-		+ p.str(0, count_size - itossz(MsvCoreMemoryControl.fcount)) + MsvCoreMemoryControl.fcount
-		+ "\r\n";
-
-#ifdef USEMSV_MEMORYCONTROL_INFO
-	{
-	MsvCoreMemoryControlCount &el = MsvCoreMemoryControl;
-
-		ls + s.str(0, max_size + 1 - 3 - 3 *(mem_size - count_size)) + "mem"
-			+ s.str(0, mem_size - itossz(el.amemory)) + el.amemory
-			+ s.str(0, mem_size - itossz(el.umemory)) + el.umemory
-			+ s.str(0, mem_size - itossz(el.fmemory)) + el.fmemory
-			+ "\r\n";
-	}
-#endif
+	msvcore_memcon_print_count(ls, count_size, mem_size, max_size, "All ", MsvCoreMemoryControl);
+	msvcore_memcon_print_count(ls, count_size, mem_size, max_size, "MemCon use ", msvcore_memcon_use);
 
 	//ls + "Malloc: " + msvcore_memcon_malloc_count + ", use: " + (msvcore_memcon_malloc_count - msvcore_memcon_free_count) + ", free: " + msvcore_memcon_free_count + "\r\n";
 
 	if(!tofile)
 		print((VString) ls);
 	else
-		SaveFileAppend(tofile, (VString) ls);
+		WriteFile(fl, ls.OneLine(), ls.Size());
 
 	MemConUnLock();
+
+	if(tofile)
+		CloseHandle(fl);
+
 	return ;
 }
 
@@ -899,21 +944,29 @@ void msvcore_memcon_print_stack(const char* tofile){
 
 	VString s("                                                                                      ");
 	LStringX<S32K> ls;
+	MTime mt;
 	int m = 0;
 
-	ls + "\r\n" "------------- Memory Control StackTrace: ";
-
+	HFILE fl = 0;
+	
 	if(tofile){
-		MTime mt;
-		ls + mt.date("d.m.y H:i:s");
+		fl = CreateFile(tofile, O_RDWR | O_CREAT, S_IREAD | S_IWRITE); //  | S_IRGRP | S_IROTH
+		if(!ishandle(fl)){
+			MemConUnLock();
+			return ;
+		}
+
+		SetFilePointer(fl, 0, FILE_END);
 	}
 
+	ls + "\r\n" "------------- Memory Control StackTrace: ";
+	ls + mt.date("d.m.y H:i:s");
 	ls + " ------------------------------------- \r\n";
 
 	for(int i = 0; i < MsvCoreMemoryControl.GetStackSz(); i++){
 		MsvCoreMemoryControlStack *sel = MsvCoreMemoryControl.GetStackPos(i);
-		ls + "AUF: " + sel->acount + "/" + sel->ucount + "/" + sel->fcount
-			+ ". MEM: " + sel->amemory + "/" + sel->umemory + "/" + sel->fmemory
+		ls + "AUF: " + sel->acount + "/" + (sel->acount - sel->fcount) + "/" + sel->fcount
+			+ ". MEM: " + sel->amemory + "/" + (sel->amemory - sel->fmemory) + "/" + sel->fmemory
 			+ ". CRC: " + sel->sid
 			+ "\r\n" + VString(sel->stacktrace) +  "\r\n\r\n";
 
@@ -923,7 +976,7 @@ void msvcore_memcon_print_stack(const char* tofile){
 			if(!tofile)
 				print((VString) ls);
 			else
-				SaveFileAppend(tofile, (VString) ls);
+				WriteFile(fl, ls.OneLine(), ls.Size());
 
 			ls.Clean();
 		}
@@ -933,9 +986,12 @@ void msvcore_memcon_print_stack(const char* tofile){
 	if(!tofile)
 		print((VString) ls);
 	else
-		SaveFileAppend(tofile, (VString) ls);
+		WriteFile(fl, ls.OneLine(), ls.Size());
 
 	MemConUnLock();
+
+	if(tofile)
+		CloseHandle(fl);
 	return ;
 }
 #endif

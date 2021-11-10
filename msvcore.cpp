@@ -211,8 +211,8 @@ int main(int args, char* arg[], char* env[]){
 	#include "proto/mysql-con.cpp"
 #endif
 
-#ifdef USEMSV_MSL_FL
-	#include "msl-fl/msl-fl.h"
+#ifdef USEMSV_MWND
+	#include "MWnd/MWndLib.h"
 #endif
 
 #ifdef USEMSV_HTTP
@@ -222,8 +222,20 @@ int main(int args, char* arg[], char* env[]){
 	#endif
 #endif
 
+#ifdef USEMSV_MSL_FL
+	#include "msl-fl/msl-fl.h"
+#endif
+
 #ifdef USEMSV_TGBOTS
 	#include "proto/tgbots.cpp"
+#endif
+
+#ifdef USEMSV_WEBSOCKETS
+	#include "proto/websockets.cpp"
+#endif
+
+#ifdef USEMSV_MODLINE
+	#include "special/modline.cpp"
 #endif
 
 #ifdef USEMSV_STORMSERVER

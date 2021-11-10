@@ -6,6 +6,42 @@
 class ModLine : public SStringX<S4K>{
 
 public:
+	ModLine(VString line, int op){
+		if(op == MODLINE_SAFE_SQL)
+			ModLineSafeSQL(line);
+	}
+
+	ModLine& ModLineSafeSQL(VString line){
+		unsigned char *ln = line, *lln = ln, *to = line.endu();
+		int cnt = 0;
+
+		for(ln; ln < to; ln++)
+			if(*ln == '\'')
+				cnt++;
+
+		if(!Reserve(line.sz + cnt))
+			return *this;
+
+		unsigned char *tn = data;
+		ln = lln;
+
+		for(ln; ln < to; ln++){
+			if(*ln == '\''){
+				memcpy(tn, lln, ln-lln);
+				tn += ln-lln;
+				*tn++ = '\\';
+				lln = ln;
+			}
+		}
+
+		if(lln != ln){
+			memcpy(tn, lln, ln-lln);
+		}
+
+		return *this;
+	}
+
+
 	static int TestMail(VString line){
 		unsigned char *ln = line, *to = line.endu();
 

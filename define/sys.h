@@ -1,9 +1,11 @@
 // Global include
+#include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
 #include <new>
 #include <signal.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
