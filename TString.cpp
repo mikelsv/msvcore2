@@ -280,9 +280,9 @@ TString::TString(const short *string, int size){
 TString::TString(const VString &line){ THREADSTRINGINIT; sz = line.sz; StringNew(line); }
 TString::TString(const TString &line){ THREADSTRINGINIT; sz = line.sz; StringNew(line); }
 
-#if __cplusplus >= 201103L || WIN32 && !__GNUC__
+//#if __cplusplus >= 201103L || WIN32 && !__GNUC__
 TString::TString(TString &&line){ THREADSTRINGINIT; data = line.data; sz = line.sz; line.data = 0; line.sz = 0; }
-#endif
+//#endif
 //TString::TString(const MString &line){ sz = line.sz; StringNew(line); }
 
 	// --------------------------------------------------- Set	Установка

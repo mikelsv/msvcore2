@@ -57,14 +57,14 @@ MString::MString(const unsigned int code, const unsigned int size){ sz=size; Str
 MString::MString(const VString &line){ sz=line.sz; StringNew(line); }
 MString::MString(const MString &line){ sz=line.sz; StringNew(line); }
 
-#if __cplusplus >= 201103L || WIN32 && !__GNUC__
+//#if __cplusplus >= 201103L || WIN32 && !__GNUC__
 MString::MString(MString &&line){
 	data = line.data;
 	sz = line.sz;
 	line.data = 0;
 	line.sz = 0;
 }
-#endif
+//#endif
 
 // --------------------------------------------------- Set	Установка
 

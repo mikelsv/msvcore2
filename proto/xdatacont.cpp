@@ -251,6 +251,12 @@ public:
 		return el;
 	}
 
+	XDataEl* GoNext(){
+		if(!el)
+			return 0;
+		return el = el->_n;
+	}
+
 	VString key(){
 		if(!el)
 			return VString();
@@ -294,7 +300,6 @@ public:
 			return 0;
 		return el->Get(key);
 	}
-
 
 };
 
@@ -418,9 +423,9 @@ public:
 
 
 			// data 0-9 or val
-			if(*line=='-' || *line>='0' && *line<='9' || *line>='a' && *line<='z' || *line>='A' && *line<='Z'){
+			if(*line=='-' || *line>='0' && *line<='9' || *line>='a' && *line<='z' || *line>='A' && *line<='Z' || *line=='.'){
 				lline=line; 
-				while(line<to){ if(!(*line=='-' || *line>='0' && *line<='9' || *line>='a' && *line<='z' || *line>='A' && *line<='Z')) break; line++; }
+				while(line<to){ if(!(*line=='-' || *line>='0' && *line<='9' || *line>='a' && *line<='z' || *line>='A' && *line<='Z' || *line=='.')) break; line++; }
 				v.setu(lline, line-lline);
 				if(v=="null")
 					v.Clean();
@@ -1506,6 +1511,9 @@ public:
 			el = AddV(pose);
 			el->key.setu(sdata.Add(k, k, 1), k);
 		}
+		
+		if(!el)
+			return 0;
 
 		el->val.setu(sdata.Add(v, v, 1), v);
 
@@ -1575,7 +1583,7 @@ public:
 	}
 
 	void GetString2(XDataEl *el, LString &ls, int level){
-		unsigned char *c;
+//		unsigned char *c;
 
 		ls + "{\r\n";
 

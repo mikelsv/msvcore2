@@ -46,7 +46,11 @@ double stod(VString val, int radix){
 double stod(char*line, unsigned int size, int radix){
 	char *ln = line, *to = line + size, m = 1;
 
-	if(ln < to && *line == '-')
+	while(ln < to && *ln == ' ')
+		ln ++;
+		
+
+	if(ln < to && *ln == '-')
 		m = -1;
 
 	for(ln; ln < to; ln++){
