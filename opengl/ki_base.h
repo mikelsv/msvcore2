@@ -145,7 +145,9 @@ class KiInt2{
 public:
 	int x, y;
 
-	KiInt2(){}
+	KiInt2(){
+		x = y = 0;
+	}
 
 	KiInt2(int _x, int _y){
 		x = _x;
@@ -157,12 +159,35 @@ public:
 		y = PartLine(line, line, ",").toi();
 	}
 
+	KiInt2 operator+(KiInt2 v){
+		return KiInt2(x + v.x, y + v.y);
+	}
+
+	KiInt2 operator-(KiInt2 v){
+		return KiInt2(x - v.x, y - v.y);
+	}
+
+	KiInt2 operator*(double v){
+		return KiInt2(x * v, y * v);
+	}
+
 	KiInt2& operator ()(int _x, int _y){
 		x = _x;
 		y = _y;
 		return *this;
 	}
 
+	KiInt2& operator +=(const KiInt2 v){
+		x += v.x;
+		y += v.y;
+		return *this;
+	}
+
+	KiInt2& operator -=(const KiInt2 v){
+		x -= v.x;
+		y -= v.y;
+		return *this;
+	}
 
 	int Length(const KiInt2 poi = KiInt2()){
 		return (int)sqrt(float(KI_PHY_POW2(x - poi.x) + KI_PHY_POW2(y - poi.y)));

@@ -79,7 +79,7 @@ public:
 		return *this;
 	}
 
-//#if __cplusplus >= 201103L || WIN32 && !__GNUC__
+#if __cplusplus >= 201103L || WIN32 && !__GNUC__
 	OListJ(OListJ &&j){
 		olist = j.olist;
 		el = j.el;
@@ -87,7 +87,7 @@ public:
 
 		j.lock = 0;
 	}
-//#endif
+#endif
 
 	~OListJ(){
 		if(olist && lock)

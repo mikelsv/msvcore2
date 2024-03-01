@@ -168,6 +168,8 @@ VString PartLineM(VString line, VString &two, VString &three, VString &four, VSt
 VString PartLineIfO(VString line, VString el);
 VString PartLineKV(VString line, VString &key, VString &val, VString elv, VString el);
 
+int PartLines(VString line, VString el, VString res[8]);
+
 // ParamLine
 int ParamLine(VString line, VString &name, unsigned char *k, VString *v, int sz);
 int ParamLineGet(int key, VString &val, unsigned char *k, VString *v, int sz);

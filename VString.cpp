@@ -352,6 +352,64 @@ int ParamLineGet(int key, VString &val, unsigned char *k, VString *v, int sz){
 	return 0;
 }
 
+int PartLines(VString line, VString el, VString res[8]){
+	unsigned char *f = el, *l = el, *t = el.endu();
+	unsigned char *lf = line, *ll = line, *lt = line.endu();
+	int resi = 0;
+
+	// Read fragment
+	while(l < t){
+		if(*l == '$'){
+			l++;
+
+			if(l >= t)
+				return -1;
+
+			if(*l == 'c'){
+				res[resi++].setu(ll, 1);
+				ll ++;
+				l ++;
+			} else if(*l == 'd'){
+				lf = ll;
+					
+				while(ll < lt && (*ll >= '0' && *ll <= '9' || *ll == '-'))
+					ll ++;
+
+				res[resi++].setu(lf, ll - lf);
+
+				l ++;
+			} else if(*l == 'f'){
+				lf = ll;
+					
+				while(ll < lt && (*ll >= '0' && *ll <= '9' || *ll == '.' || *ll == '-'))
+					ll ++;
+
+				res[resi++].setu(lf, ll - lf);
+
+				l ++;
+			}
+			else if(*l == '$'){
+				if(ll >= lt || *ll != *l)
+					return -1;
+				ll ++;
+				l ++;
+			}
+		} else {
+			if(ll >= lt || *ll != *l)
+				return -1;
+			ll ++;
+			l ++;
+		}
+
+		if(resi == 8 && l < t)
+			return -1;
+	}
+
+	if(ll == lt && l == t)
+		return resi;
+	return 0;
+}
+
 
 // dspace
 VString dspacev(VString &line, int s){ // удаление пробелов s - начало конец вернуть;  1,2,4

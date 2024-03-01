@@ -534,7 +534,7 @@ public:
 		BYTE *p = GetData() + x * 3 + y * ewidth;
 		p[2] = c & 255;
 		p[1] = (c >> 8) & 255;
-		p[0] = (c >> 16) & 255;
+		p[2] = (c >> 16) & 255;
 
 		//return (*(int*)(GetData()+x*3+y*ewidth)) = c & 16777215;
 		return c;

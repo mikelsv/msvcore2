@@ -242,8 +242,11 @@ void glColor3m(MRGB rgb){
 #include "mgl_load.h"
 #include "mgl_proc.h"
 #include "mgl_shader_simple.h"
+
+#ifdef USEMSV_FFMPEG_LIBRARY
 #include "mgl_render.h"
 #include "mgl_avideo.h"
+
 
 class MaticalsOpenGlRender{
 	// Grab
@@ -286,3 +289,5 @@ public:
 bool MaticalsOpenGlRenderOpen(VString file, KiInt3 window, int fps){
 	return MaticalsOpenGlRender.Open(file, window, fps);
 }
+
+#endif

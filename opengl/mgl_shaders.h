@@ -44,7 +44,7 @@ GLuint CreateShader(VString source, GLenum type, int flag_print){
 		glGetShaderInfoLog(shader, length, &length, (GLchar *)log);
 
 		print("MaticalsGlsl.CreateShader() error:\r\n", log, "\r\n");
-		SaveFile("elog_create_shader.txt", source);
+		SaveFile("elog_create_shader.txt", LString() + source + "\r\n\r\n" + log);
 
 		if(!MaticalsOpenGl.flag_error)
 			MaticalsGlsl.UseErrorProgram(source, log);

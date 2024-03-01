@@ -1,4 +1,5 @@
 class MglSimpleGlsl{
+protected:
 	GLint prog_id;
 
 public:
@@ -87,6 +88,12 @@ private:
     }
 
 public:
+	void checkOpenGLerror(){
+	  GLenum errCode;
+	  if((errCode = glGetError()) != GL_NO_ERROR)
+		print("OpenGl error! - ", glErrorString(errCode));
+	}
+
 	void Clean(){
 		if(prog_id)
 			glDeleteProgram(prog_id);
@@ -100,7 +107,7 @@ public:
 };
 
 
-class MsvSimpleGlslTriangle : public MglSimpleGlsl{
+class MglSimpleGlslTriangle : public MglSimpleGlsl{
 	GLuint vbo, vertex_id, color_id;
 
 struct vertex{
@@ -185,12 +192,6 @@ public:
 		glUseProgram(0); 
 
 		checkOpenGLerror();
-	}
-
-	void checkOpenGLerror(){
-	  GLenum errCode;
-	  if((errCode = glGetError()) != GL_NO_ERROR)
-		print("OpenGl error! - ", glErrorString(errCode));
 	}
 	
 };

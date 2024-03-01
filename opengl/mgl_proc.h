@@ -1,3 +1,10 @@
+#ifndef MGLSL_BUFFERS_ALL
+#define MGLSL_CHANNELS_MAX	10
+#define MGLSL_BUFFERS_MAX	4
+#define MGLSL_BUFFERS_ALL	(MGLSL_BUFFERS_MAX + 1)
+#endif
+
+
 VString GetFragVer(){
 	return "\r\n#version 450\r\n";
 }
@@ -130,6 +137,11 @@ public:
 
 };
 
+#ifndef MGLSL_USE_LOAD_IMAGE
+class MaticalsGlslImages{
+
+};
+#endif
 
 
 class MgProcEl{
