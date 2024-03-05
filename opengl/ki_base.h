@@ -171,6 +171,10 @@ public:
 		return KiInt2(x * v, y * v);
 	}
 
+	KiInt2 operator/(double v){
+		return KiInt2(x / v, y / v);
+	}
+
 	KiInt2& operator ()(int _x, int _y){
 		x = _x;
 		y = _y;
