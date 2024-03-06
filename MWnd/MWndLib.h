@@ -85,7 +85,6 @@ int opengl_frame=0, opengl_frames=0;
 #include "MWndCore.h"
 #include "MWndMenu.h"
 
-
 #ifdef USEMSV_GAMEBOX
 	#include "GameBox.h"
 #endif
@@ -99,10 +98,8 @@ int opengl_frame=0, opengl_frames=0;
 #include "MWndCoreOpenGl.h"
 #endif
 
-
-
-
 // CxImage Lib
+#ifdef USEMSV_MWND_CXIMAGE_LOCAL
 #ifdef _DEBUG
 #ifndef WIN64
 #pragma comment(lib,"../../MSVImages/png/Debug/png.lib")
@@ -150,6 +147,53 @@ int opengl_frame=0, opengl_frames=0;
 #endif
 #endif
 
+#else // Global
+	#ifdef _DEBUG
+		#ifndef WIN64
+			#pragma comment(lib,"cximage/dx86/png.lib")
+			#pragma comment(lib,"cximage/dx86/jpeg.lib")
+			#pragma comment(lib,"cximage/dx86/zlib.lib")
+			#pragma comment(lib,"cximage/dx86/tiff.lib")
+			#pragma comment(lib,"cximage/dx86/j2k.lib")
+			#pragma comment(lib,"cximage/dx86/j2k.lib")
+			#pragma comment(lib,"cximage/dx86/jbig.lib")
+			#pragma comment(lib,"cximage/dx86/jasper.lib")
+			#pragma comment(lib,"cximage/dx86/cximage.lib")
+		#else
+			#pragma comment(lib,"cximage/dx64/png.lib")
+			#pragma comment(lib,"cximage/dx64/jpeg.lib")
+			#pragma comment(lib,"cximage/dx64/zlib.lib")
+			#pragma comment(lib,"cximage/dx64/tiff.lib")
+			#pragma comment(lib,"cximage/dx64/j2k.lib")
+			#pragma comment(lib,"cximage/dx64/j2k.lib")
+			#pragma comment(lib,"cximage/dx64/jbig.lib")
+			#pragma comment(lib,"cximage/dx64/jasper.lib")
+			#pragma comment(lib,"cximage/dx64/cximage.lib")
+		#endif
+	#else
+		#ifndef WIN64
+			#pragma comment(lib,"cximage/rx86/png.lib")
+			#pragma comment(lib,"cximage/rx86/jpeg.lib")
+			#pragma comment(lib,"cximage/rx86/zlib.lib")
+			#pragma comment(lib,"cximage/rx86/tiff.lib")
+			#pragma comment(lib,"cximage/rx86/j2k.lib")
+			#pragma comment(lib,"cximage/rx86/j2k.lib")
+			#pragma comment(lib,"cximage/rx86/jbig.lib")
+			#pragma comment(lib,"cximage/rx86/jasper.lib")
+			#pragma comment(lib,"cximage/rx86/cximage.lib")
+		#else
+			#pragma comment(lib,"cximage/rx64/png.lib")
+			#pragma comment(lib,"cximage/rx64/jpeg.lib")
+			#pragma comment(lib,"cximage/rx64/zlib.lib")
+			#pragma comment(lib,"cximage/rx64/tiff.lib")
+			#pragma comment(lib,"cximage/rx64/j2k.lib")
+			#pragma comment(lib,"cximage/rx64/j2k.lib")
+			#pragma comment(lib,"cximage/rx64/jbig.lib")
+			#pragma comment(lib,"cximage/rx64/jasper.lib")
+			#pragma comment(lib,"cximage/rx64/cximage.lib")
+		#endif
+	#endif
+#endif
 
 // Return type
 int RetType(const VString ext)

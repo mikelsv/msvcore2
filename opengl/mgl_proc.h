@@ -239,7 +239,7 @@ private:
 
 		// Json
 		ct.ReadJson(data);
-		XDataPEl el(ct);
+		XDataPEl el(ct.GetData());
 
 		// Vert
 		vert = CreateShaderFile(LString() + mpel->file + "/" + el("vertex.file")->v(), GL_VERTEX_SHADER);

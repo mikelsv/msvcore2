@@ -1090,7 +1090,7 @@ TE: trailers\r\n\
 	
 	// Json
 	ct.ReadJson(data.str(1, -2));
-	XDataPEl el(ct);
+	XDataPEl el(ct.GetData());
 
 	// Folder
 	MString path;

@@ -196,7 +196,7 @@ public:
 	
 };
 
-class MtsGlslTexture : public MglSimpleGlsl{
+class MglGlslTexture : public MglSimpleGlsl{
 	GLuint vbo, vao, vertex_id, color_id;
 
 	// Render texture.
@@ -295,4 +295,52 @@ public:
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glUseProgram(0);
 	}	
+};
+
+
+class MglGlslBuffer{
+	GLuint ubo, bind, prog_id;
+
+public:
+	MglGlslBuffer(){
+		ubo = 0;
+	}
+
+	void Init(GLuint prog, GLuint b){
+		glGenBuffers(1, &ubo);
+		
+		prog_id = prog;
+		bind = b;
+	}
+
+	void SetData(void *data, int size){
+		glUseProgram(prog_id);
+
+		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+		glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, bind, ubo);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		glUseProgram(0);
+	}
+
+	void SetBufferData(void *data, int size){
+		glUseProgram(prog_id);
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ubo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_STATIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bind, ubo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+		glUseProgram(0);
+	}
+
+
+	~MglGlslBuffer(){
+		if(ubo){
+			glDeleteBuffers(1, &ubo);
+			ubo = 0;
+		}
+	}
+	
 };

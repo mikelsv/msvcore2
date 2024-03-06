@@ -40,6 +40,18 @@ public:
 		return KiVec2(x / v, y / v);
 	}
 
+	KiVec2& operator +=(const KiVec2 v){
+		x += v.x;
+		y += v.y;
+		return *this;
+	}
+
+	KiVec2& operator -=(const KiVec2 v){
+		x -= v.x;
+		y -= v.y;
+		return *this;
+	}
+
 	bool Is(){
 		return x != 0 || y != 0;
 	}
@@ -141,6 +153,41 @@ public:
 
 };
 
+class KiVec4{
+	public:
+	float x, y, z, w;
+
+	KiVec4(){
+		x = 0;
+		y = 0;
+		z = 0;
+		w = 0;
+	}
+
+	KiVec4(float v){
+		x = v;
+		y = v;
+		z = v;
+		w = v;
+	}
+
+	KiVec4(const KiVec2 v){
+		x = v.x;
+		y = v.y;
+		z = 0;
+		w = 0;
+	}
+
+	KiVec4(float _x, float _y, float _z, float _w){
+		x = _x;
+		y = _y;
+		z = _z;
+		w = _w;
+	}
+};
+
+
+ // Ki Int
 class KiInt2{
 public:
 	int x, y;
@@ -191,6 +238,10 @@ public:
 		x -= v.x;
 		y -= v.y;
 		return *this;
+	}
+
+	operator KiVec2(){
+		return KiVec2(x, y);
 	}
 
 	int Length(const KiInt2 poi = KiInt2()){

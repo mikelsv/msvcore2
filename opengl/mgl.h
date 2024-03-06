@@ -242,6 +242,7 @@ void glColor3m(MRGB rgb){
 #include "mgl_load.h"
 #include "mgl_proc.h"
 #include "mgl_shader_simple.h"
+#include "mgl_shader_menu.h"
 
 #ifdef USEMSV_FFMPEG_LIBRARY
 #include "mgl_render.h"
