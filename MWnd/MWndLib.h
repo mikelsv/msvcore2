@@ -59,9 +59,11 @@ struct DINT{
 
 
 // CxImage
-#define MSV_USECXIMAGE
+#ifdef MSV_USECXIMAGE
+//#define MSV_USECXIMAGE
 #include "../../../MSVImages/CxImage/ximage.h"
 #include "../../../MSVImages/tiff/tiff.h"
+#endif
 
 // OpenGL data
 int opengl_frame=0, opengl_frames=0;
@@ -99,6 +101,7 @@ int opengl_frame=0, opengl_frames=0;
 #endif
 
 // CxImage Lib
+#ifdef MSV_USECXIMAGE
 #ifdef USEMSV_MWND_CXIMAGE_LOCAL
 #ifdef _DEBUG
 #ifndef WIN64
@@ -193,6 +196,7 @@ int opengl_frame=0, opengl_frames=0;
 			#pragma comment(lib,"cximage/rx64/cximage.lib")
 		#endif
 	#endif
+#endif
 #endif
 
 // Return type

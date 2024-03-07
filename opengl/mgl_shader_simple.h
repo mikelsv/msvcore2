@@ -313,7 +313,7 @@ public:
 		bind = b;
 	}
 
-	void SetData(void *data, int size){
+	void SetUniformData(void *data, int size){
 		glUseProgram(prog_id);
 
 		glBindBuffer(GL_UNIFORM_BUFFER, ubo);

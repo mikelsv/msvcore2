@@ -434,8 +434,53 @@ HDC GetWindowDC(HWND hWnd){ return 0; }
 BOOL GetWindowRect(HWND hWnd, LPRECT lpRect){ return 0; }
 #endif
 
+#ifndef PI
+ #define PI 3.141592653589793f
+#endif
 
+#ifndef MSV_USECXIMAGE
+#define USEMSV_CXIMAGE_EMULATE
 
+enum ENUM_CXIMAGE_FORMATS{
+	CXIMAGE_FORMAT_UNKNOWN,
+	CXIMAGE_FORMAT_BMP
+};
+
+class CxImage{
+public:
+	CxImage(DWORD imagetype = 0);
+
+	void* Create(DWORD x, DWORD y, DWORD bpp, DWORD type);
+	bool Destroy();
+
+	bool CreateFromArray(BYTE* pArray,DWORD dwWidth,DWORD dwHeight,DWORD dwBitsperpixel, DWORD dwBytesperline, bool bFlipImage);
+	bool CreateFromHBITMAP(HBITMAP hbmp, HPALETTE hpal = 0);
+
+	bool Decode(BYTE*, DWORD, DWORD);
+
+	bool IsValid()const;
+	WORD GetBpp()const;
+	DWORD GetWidth()const;
+	DWORD GetHeight()const;
+	DWORD GetEffWidth()const;
+//	BYTE* GetInfo();
+	BYTE* GetData();
+
+	RGBQUAD GetPixelColor(long x, long y, bool bGetAlpha = true);
+	void SetPixelColor(long x, long y, RGBQUAD rgb, bool bSetAlpha = true);
+	void SetPixelColor(long x, long y, COLORREF col);
+	
+	bool Crop(const RECT &r, CxImage *);
+
+	void Clear(BYTE);
+
+//	bool CxImage::CreateFromHBITMAP(HBITMAP, HPALETTE hpal){ return 0; }
+//	HBITMAP CxImage::MakeBitmap(HDC hdc){ return 0; }
+
+	bool Load(const TCHAR* filename, DWORD imagetype);
+	bool Save(const TCHAR* filename, DWORD imagetype);
+};
+#endif
 
 
 // Virtual CxImage
@@ -465,7 +510,7 @@ public:
 	DWORD CxImage::GetHeight()const{ return 0; }
 	DWORD CxImage::GetEffWidth()const{ return 0; }
 //	BYTE* CxImage::GetInfo(){ return 0; }
-//	BYTE* CxImage::GetData(){ return 0; }
+	BYTE* CxImage::GetData(){ return 0; }
 
 	int Draw2(HDC, int x, int y, int cx, int cy){ return 0; }
 	int Draw2(HDC, RECT r){ return 0; }
