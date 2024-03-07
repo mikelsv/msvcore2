@@ -6,13 +6,9 @@ HWND MWndCreateWindow(DWORD dwExStyle, VString lpClassName, VString lpWindowName
 void MWndDestroyWindow(HWND hwnd){ DestroyWindow(hwnd); }
 #else
 
-#ifdef USEMSV_ANDROID
-// Compile in WIN32, no linux types.
-typedef void*	GC;
-#endif
-
-//typedef void* HDC;
-typedef GC	  HDC;
+// Pointers
+typedef void* GC;
+typedef GC HDC;
 typedef void* HFONT;
 typedef void* HGDIOBJ;
 typedef void* HBITMAP;
@@ -24,17 +20,29 @@ typedef void* HMENU;
 typedef void VOID;
 typedef void* HGLOBAL;
 typedef void* HPALETTE;
+typedef void *HRGN;
 
 #ifndef CONST
 #define CONST const
 #endif
 
-#define VOID void
+typedef wchar_t WCHAR;
+typedef WCHAR TCHAR, *PTCHAR;
 
-#define DEFAULT_GUI_FONT    17
-#define DIB_RGB_COLORS      0 /* color table in RGBs */
-#define DIB_PAL_COLORS      1 /* color table in palette indices */
-#define OPAQUE              2
+typedef long LONG;
+//#define VOID void
+
+typedef struct tagSIZE
+{
+    LONG        cx;
+    LONG        cy;
+} SIZE, *PSIZE, *LPSIZE;
+
+typedef struct tagPOINT
+{
+    LONG  x;
+    LONG  y;
+} POINT, *PPOINT, *NPPOINT, *LPPOINT;
 
 typedef WORD                ATOM;
 typedef RECT*				LPRECT;
@@ -51,20 +59,13 @@ typedef int INT_PTR, *PINT_PTR;
 typedef unsigned int UINT_PTR, *PUINT_PTR;
 typedef long LONG_PTR, *PLONG_PTR;
 typedef unsigned long ULONG_PTR, *PULONG_PTR;
-
+typedef ULONG_PTR SIZE_T, *PSIZE_T;
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 
+//typedef void*            WPARAM;
 typedef UINT_PTR            WPARAM;
 typedef LONG_PTR            LPARAM;
 typedef LONG_PTR            LRESULT;
-
-typedef struct tagSIZE
-{
-    LONG        cx;
-    LONG        cy;
-} SIZE, *PSIZE, *LPSIZE;
-
-typedef ULONG_PTR SIZE_T, *PSIZE_T;
 
 #define CS_VREDRAW          0x0001
 #define CS_HREDRAW          0x0002
@@ -152,6 +153,10 @@ typedef ULONG_PTR SIZE_T, *PSIZE_T;
 
 #define HWND_TOPMOST    ((HWND)-1)
 
+#define DEFAULT_GUI_FONT    17
+#define DIB_RGB_COLORS      0 /* color table in RGBs */
+#define DIB_PAL_COLORS      1 /* color table in palette indices */
+#define OPAQUE              2
 
 #define WM_NULL                         0x0000
 #define WM_CREATE                       0x0001
@@ -221,11 +226,33 @@ typedef ULONG_PTR SIZE_T, *PSIZE_T;
 #define LOWORD(l)           ((WORD)(((DWORD_PTR)(l)) & 0xffff))
 #define HIWORD(l)           ((WORD)((((DWORD_PTR)(l)) >> 16) & 0xffff))
 
+// Bitmap
+typedef struct tagBITMAPINFOHEADER{
+        DWORD      biSize;
+        LONG       biWidth;
+        LONG       biHeight;
+        WORD       biPlanes;
+        WORD       biBitCount;
+        DWORD      biCompression;
+        DWORD      biSizeImage;
+        LONG       biXPelsPerMeter;
+        LONG       biYPelsPerMeter;
+        DWORD      biClrUsed;
+        DWORD      biClrImportant;
+} BITMAPINFOHEADER, *LPBITMAPINFOHEADER, *PBITMAPINFOHEADER;
 
 typedef struct tagBITMAPINFO {
     BITMAPINFOHEADER    bmiHeader;
     RGBQUAD             bmiColors[1];
 } BITMAPINFO, *LPBITMAPINFO, *PBITMAPINFO;
+
+typedef struct tagBITMAPFILEHEADER {
+        WORD    bfType;
+        DWORD   bfSize;
+        WORD    bfReserved1;
+        WORD    bfReserved2;
+        DWORD   bfOffBits;
+} BITMAPFILEHEADER, *LPBITMAPFILEHEADER, *PBITMAPFILEHEADER;
 
 typedef struct tagMSG{
     HWND        hwnd;
@@ -393,6 +420,16 @@ BOOL GetClientRect(HWND hWnd, LPRECT lpRect){ return 0; }
 
 //HDC GetWindowDC(HWND hWnd){ return 0; }
 
+HWND MWndCreateWindow(DWORD dwExStyle, VString lpClassName, VString lpWindowName, DWORD dwStyle, MRect rect, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam){
+	return 0;
+}
+
+void MWndDestroyWindow(HWND hwnd){ }
+
+GC GetDC(HWND h){ return 0; }
+HDC GetWindowDC(HWND hWnd){ return 0; }
+BOOL GetWindowRect(HWND hWnd, LPRECT lpRect){ return 0; }
+
 #endif
 
 #if defined(__GNUC__)
@@ -417,21 +454,12 @@ BOOL GetClientRect(HWND hWnd, LPRECT lpRect){ return 0; }
 	int StretchDIBits(HDC hdc, int xDest, int yDest, int DestWidth, int DestHeight, int xSrc, int ySrc, int SrcWidth, int SrcHeight,
 	CONST VOID * lpBits, CONST BITMAPINFO * lpbmi, UINT iUsage, DWORD rop){ return 0; }
 
-	BOOL PrintWindow(HWND hwnd, HDC hdcBlt, UINT nFlags){ return 0; }
-	VOID SwitchToThisWindow( HWND hwnd, BOOL fUnknown){ return ; }
+	//BOOL PrintWindow(HWND hwnd, HDC hdcBlt, UINT nFlags){ return 0; }
+	//VOID SwitchToThisWindow( HWND hwnd, BOOL fUnknown){ return ; }
 #endif
 
 
 #if defined(USEMSV_FLASH) || defined(USEMSV_ANDROID)
-HWND MWndCreateWindow(DWORD dwExStyle, VString lpClassName, VString lpWindowName, DWORD dwStyle, MRect rect, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam){
-	return 0;
-}
-
-void MWndDestroyWindow(HWND hwnd){ }
-
-GC GetDC(HWND h){ return 0; }
-HDC GetWindowDC(HWND hWnd){ return 0; }
-BOOL GetWindowRect(HWND hWnd, LPRECT lpRect){ return 0; }
 #endif
 
 #ifndef PI
@@ -477,7 +505,7 @@ public:
 //	bool CxImage::CreateFromHBITMAP(HBITMAP, HPALETTE hpal){ return 0; }
 //	HBITMAP CxImage::MakeBitmap(HDC hdc){ return 0; }
 
-	bool Load(const TCHAR* filename, DWORD imagetype);
+	bool Load(const TCHAR* filename, DWORD imagetype = 0);
 	bool Save(const TCHAR* filename, DWORD imagetype);
 };
 #endif

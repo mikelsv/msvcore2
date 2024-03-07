@@ -683,7 +683,10 @@ public:
 	~MWndFontsControl(){ Close(); }
 
 	operator HDC(){ return credc; }
+
+#ifdef WIN32
 	operator HFONT(){ return hfont; }
+#endif
 
 	void Close(){
 		if(holdfont) ::SelectObject(credc, holdfont); 

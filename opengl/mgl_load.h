@@ -1215,7 +1215,7 @@ TE: trailers\r\n\
 	json.Save(LString() + path + "configure.json");
 
 	// Result path
-	save_path = LString() + "shadertoy/" + name;
+	save_path = VString(LString() + "shadertoy/" + name);
 
 	print("ShadertoyImport(). Save to: ", save_path, ".\r\n\r\n");
 

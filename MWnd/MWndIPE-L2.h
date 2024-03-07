@@ -827,7 +827,10 @@ HBITMAP hBmp = NULL;
 
     HGDIOBJ hOld = SelectObject(hDCMem, hBmp);
 
-    SendMessage(hWnd, WM_PRINT, (WPARAM) hDCMem, PRF_CHILDREN | PRF_CLIENT | PRF_ERASEBKGND | PRF_NONCLIENT | PRF_OWNED);
+	// CURE IT IF YOU USE THIS CODE !!!!!!!!!!!!!!!! //
+
+    //SendMessage(hWnd, WM_PRINT, (WPARAM) hDCMem, PRF_CHILDREN | PRF_CLIENT | PRF_ERASEBKGND | PRF_NONCLIENT | PRF_OWNED);
+	
 
     SelectObject(hDCMem, hOld);
 
@@ -1762,7 +1765,7 @@ int Save(VString file){
 #ifndef NOUSEMSV_WINAPI
 	CxImage img;
 	img.CreateFromArray(GetData(), GetWidth(), GetHeight(), 24, GetEffWidth(), 0);
-	return img.Save(MODUNICODE(file), RetType(file.str(-3)));
+	//return img.Save(MODUNICODE(file), RetType(file.str(-3)));
 #endif // #ifndef NOUSEMSV_WINAPI
 	return 0;
 	}
