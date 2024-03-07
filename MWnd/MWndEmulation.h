@@ -26,7 +26,7 @@ typedef void *HRGN;
 #define CONST const
 #endif
 
-typedef wchar_t WCHAR;
+//typedef wchar_t WCHAR;
 typedef WCHAR TCHAR, *PTCHAR;
 
 typedef long LONG;
