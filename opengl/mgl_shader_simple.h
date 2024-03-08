@@ -134,7 +134,7 @@ public:
 			return 0;
 
 		vertex_id = GetAttribLocation("coord");
-		color_id = GetUniformLocation("color");	
+		color_id = GetUniformLocation("color");
 
 		checkOpenGLerror();
 
@@ -144,17 +144,18 @@ public:
 	}
 
 	int InitVbo(){
+		// Init buffer
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		// ! Вершины нашего треугольника
+
+		// Vertices triangle
 		vertex triangle[] = {
-			{-1.0f,-1.0f},
-			{ 0.0f, 1.0f},
-			{ 1.0f,-1.0f}
+			{-1.0f,-1.0f}, // left
+			{ 0.0f, 1.0f}, // up
+			{ 1.0f,-1.0f}  // right 
 		};
 
-		//! Передаем вершины в буфер
-		//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(triangle), triangle);
+		// Transferring vertices to the buffer
 		glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
 
 		checkOpenGLerror();
@@ -163,32 +164,32 @@ public:
 	}
 
 	void Render(){
-		//! Отрисовка
+		// Clear color buffer
 		glClear(GL_COLOR_BUFFER_BIT);
-		// ! Устанавливаем шейдерную программу текущей
+
+		// Set shader program
 		UseProgram();
-		//glUseProgram(GetId()); 
   
 		static float red[4] = {1.0f, 0.0f, 0.0f, 1.0f};
-		// ! Передаем юниформ в шейдер
+		// Set color
 		glUniform4fv(color_id, 1, red);
 
-		// ! Включаем массив атрибутов
+		// Set an array of attributes
 		glEnableVertexAttribArray(vertex_id);
-		// ! Подключаем VBO
+		// Set VBO
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		// ! Указывая pointer 0 при подключенном буфере, мы указываем, что данные представлены в VBO
+		// Set pointer
 		glVertexAttribPointer(vertex_id, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-		// ! Отключаем VBO
+		// Disable VBO
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		// ! Передаем данные на видеокарту (рисуем)
+		// Transferring data to the video card (drawing)
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex));
 
-		// ! Отключаем массив атрибутов
+		// Disable the attribute array
 		glDisableVertexAttribArray(vertex_id);
 
-		// ! Отключаем шейдерную программу
+		// Disable the shader program
 		glUseProgram(0); 
 
 		checkOpenGLerror();
@@ -334,7 +335,6 @@ public:
 
 		glUseProgram(0);
 	}
-
 
 	~MglGlslBuffer(){
 		if(ubo){

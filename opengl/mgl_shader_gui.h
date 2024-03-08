@@ -521,3 +521,74 @@ public:
 	}
 
 };
+
+enum MglGuiTypesEnum{
+	MGLGUI_TYPES_UNKNOWN,
+	MGLGUI_TYPES_MENU,
+	MGLGUI_TYPES_TOOLBAR
+};
+
+class MglGuiElements{
+public:
+	MglGuiTypesEnum type;
+	MString text;
+	int id;
+	KiVec4 rect;
+};
+
+#pragma pack(push, 1)
+class MglGuiOptions{
+public:
+	float fontSize, fontHeight, letterWidth;
+	float borderSize, freesize;
+	float unk[3];
+
+	MglGuiOptions(){
+		fontSize = 40;
+		letterWidth = fontSize / 2;
+	}
+};
+#pragma pack(pop)
+
+class MglGui : public MglSimpleGlsl{
+	OList<MglGuiElements> els;
+	MglGuiOptions opt;
+	KiVec2 screen;
+public:
+
+	void InsertMenu(int id, VString text){
+		MglGuiElements *el = els.NewE();
+		el->type = MGLGUI_TYPES_MENU;
+		el->id = id;
+		el->text = text;
+	}
+
+	void InsertToolbar(int id, VString text){
+
+
+	}
+
+	void Draw(){
+		DrawMenu();
+
+		MglGuiElements *el = 0;
+
+
+
+	}
+
+	void DrawMenu(){
+		MglGuiElements *el = 0;
+		KiVec2 pos = 0;
+
+		// Update menu
+		while(el = els.Next(el)){
+			float size = el->text.size() * opt.letterWidth;
+			el->rect = KiVec4(pos.x, pos.y, pos.x + size, pos.y = opt.fontHeight);
+			pos.x += size;
+		}
+	}	
+
+	~MglGui(){}
+
+};
