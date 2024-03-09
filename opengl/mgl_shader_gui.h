@@ -39,6 +39,7 @@ class MglMenu : public MglSimpleGlsl{
 
 		// Uniform
 		GLint uni_iTime, uni_iRes, uni_iMouse, uni_iMouseMenu, uni_iFont;
+		GLint uni_iOpt;
 		GLuint font_id;
 		GLuint vbo, vao;
 
@@ -84,12 +85,13 @@ public:
 		uni_iMouseMenu = GetUniformLocation("iMouseMenu");
 		uni_iFont = GetUniformLocation("iFont");
 		//unu_iOptions = GetUniformLocation("MenuOptions");
+		//uni_iOpt = glGetUniformBlockIndex(prog_id, "MenuOptionsId");
+		//GLuint buf_head_id = glGetProgramResourceIndex(prog_id, GL_SHADER_STORAGE_BLOCK, "MenuHead");
+		//GLuint buf_text_id = glGetProgramResourceIndex(prog_id, GL_SHADER_STORAGE_BLOCK, "MenuTextBuffer");
 
 		buf_opt.Init(prog_id, 2);
 		buf_head.Init(prog_id, 3);
 		buf_text.Init(prog_id, 4);
-		
-		//buf_opt.SetData(&opt, sizeof(opt));
 
 		UpdateMouse(KiInt2());
 
@@ -327,9 +329,9 @@ public:
 		uni_popupSize = GetUniformLocation("popupSize");
 		//unu_iOptions = GetUniformLocation("MenuOptions");
 
-		buf_opt.Init(prog_id, 2);
-		buf_head.Init(prog_id, 5);
-		buf_text.Init(prog_id, 6);
+		buf_opt.Init(prog_id, 5);
+		buf_head.Init(prog_id, 6);
+		buf_text.Init(prog_id, 7);
 		
 		//buf_opt.SetData(&opt, sizeof(opt));
 
