@@ -60,6 +60,10 @@ public:
 		return x == 0 && y == 0;
 	}
 
+	float Length() {
+		return sqrtf(x * x + y * y);
+	}
+
 };
 
 class KiVec3{
@@ -184,6 +188,40 @@ class KiVec4{
 		z = _z;
 		w = _w;
 	}
+
+	bool IsNull(){
+		return x == 0 && y == 0 && z == 0 && w == 0;
+	}
+
+	void UnionRect(KiVec4 rect){
+		x = min(x, rect.x);
+		y = min(y, rect.y);
+		z = max(z, rect.z);
+		w = max(w, rect.w);
+	}
+
+	void RandomOne() {
+		// srand(time());
+
+		x = (rand() % 255) / 255.;
+		y = (rand() % 255) / 255.;
+		z = (rand() % 255) / 255.;
+		w = 1.;
+	}
+
+	KiVec4& operator-=(float v) {
+		x -= v;
+		y -= v;
+		z -= v;
+		w -= v;
+
+		return *this;
+	}
+
+	KiVec4 operator-(float v) {
+		return KiVec4(x - v, y - v, z - v, w - v);
+	}
+
 };
 
 

@@ -34,6 +34,7 @@ class MglMenu : public MglSimpleGlsl{
 		OList<MglMenulEl> menu;
 		MglMenuOptions opt;
 		MString head_data, text_data;
+		KiVec2 menu_pos; 
 
 		bool active;
 
@@ -123,16 +124,44 @@ public:
 		glUseProgram(0);
 	}
 
-	void UpdateMouse(KiVec2 res){
+	void UpdateMouse(KiVec2 pos){
 		UseProgram();
-		glUniform2f(uni_iMouse, res.x, res.y);
+		glUniform2f(uni_iMouse, pos.x, pos.y);
 		glUseProgram(0);
 	}
 
-	void UpdateMouseMenu(KiVec2 res){
+	void UpdateMouseMenu(KiVec2 pos){
+		menu_pos = pos;
+
 		UseProgram();
-		glUniform2f(uni_iMouseMenu, res.x, res.y);
+		glUniform2f(uni_iMouseMenu, pos.x, pos.y);
 		glUseProgram(0);
+	}
+
+	// In
+	bool InRect(KiVec4 rect, KiVec2 coord){
+		if(coord.x > rect.x && coord.x < rect.z && coord.y > rect.y && coord.y < rect.w)
+			return true;
+		return false;
+	}
+
+	int OnClick(KiVec2 mouse){
+		MglMenulEl *el = 0;
+		float menu_height = menu.Size() * opt.fontSize * 0;
+		int count = 0;
+
+		while(el = menu.Next(el)){
+			KiVec4 rect(menu_pos.x, menu_pos.y - menu_height - opt.fontSize * (count + 1), menu_pos.x + opt.maxWidth, menu_pos.y - menu_height - opt.fontSize * count);
+
+			if(InRect(rect, mouse)){
+				//el->etime = this_time + opt.hideTime;
+				return el->id;
+			}
+
+			count ++;
+		}
+
+		return 0;
 	}
 		
 	bool DrawMenu(){
@@ -310,7 +339,7 @@ public:
 		opt.showTime = 1;
 		opt.hideTime = 1;
 
-		opt.textColor = KiVec4(.06, .94, .94, 1);		
+		opt.textColor = KiVec4(1.0, 0.83, 0.22, 1);		
 		opt.bgColor = KiVec4(.94, .94, .94, 1);
 		opt.borderColor = KiVec4(.06, .06, .06, 1);
 
@@ -360,7 +389,7 @@ public:
 		el->etime = this_time + life_time;
 
 		update = 1;
-		Draw();
+		//Draw();
 		return ;
 	}
 
@@ -393,7 +422,7 @@ public:
 		return false;
 	}
 
-	void OnCLick(KiVec2 mouse){
+	void OnClick(KiVec2 mouse){
 		MglPopUpEl *el = 0;
 		//int update = 0;
 
@@ -521,13 +550,18 @@ public:
 	~MglPopUp(){
 		//Clear();
 	}
-
 };
 
 enum MglGuiTypesEnum{
 	MGLGUI_TYPES_UNKNOWN,
 	MGLGUI_TYPES_MENU,
-	MGLGUI_TYPES_TOOLBAR
+	MGLGUI_TYPES_TREE,
+	MGLGUI_TYPES_TOOLBAR,
+
+	MGLGUI_PLUSMINUS,
+	MGLGUI_CHECKBOX,
+	MGLGUI_COLOR,
+	MGLGUI_TEXT
 };
 
 class MglGuiElements{
@@ -541,9 +575,11 @@ public:
 #pragma pack(push, 1)
 class MglGuiOptions{
 public:
-	float fontSize, fontHeight, letterWidth;
-	float borderSize, freesize;
-	float unk[3];
+	float fontSize, letterWidth;
+	float borderSize, freeSize;
+	//float unk[3];
+
+	KiVec4 textColor, bgColor, borderColor;
 
 	MglGuiOptions(){
 		fontSize = 40;
@@ -552,44 +588,234 @@ public:
 };
 #pragma pack(pop)
 
+#pragma pack(push, 1) 
+struct MglGuUpHead{
+	int id, text_pos, text_size, _unk;
+	KiVec4 rect;
+};
+#pragma pack(pop)
+
 class MglGui : public MglSimpleGlsl{
+	// Data
 	OList<MglGuiElements> els;
 	MglGuiOptions opt;
 	KiVec2 screen;
+	bool update;
+
+	// Uniform
+	GLint uni_iTime, uni_iRes, uni_iMouse, uni_iFont, unu_iOptions, uni_guiSize;
+	GLuint font_id;
+	GLuint vbo, vao;
+
+	// Buffer
+	MglGlslBuffer buf_opt, buf_head, buf_text;
 public:
+
+	bool Init(){
+		// Init Options
+		opt.fontSize = 40;
+		opt.letterWidth = opt.fontSize / 2;
+		opt.borderSize = 2;
+		opt.freeSize = 5;
+
+		opt.textColor = KiVec4(.06, .94, .94, 1);		
+		opt.bgColor = KiVec4(.94, .94, .94, 1);
+		opt.borderColor = KiVec4(.06, .06, .06, 1);
+
+		// Init Glsl
+		if(!Load(LoadFile("glsl/gui.vs"), LoadFile("glsl/gui.fs")))
+			return 0;
+
+		InitVbo();
+
+		// Init uniforms
+		uni_iTime = GetUniformLocation("iTime");
+		uni_iRes = GetUniformLocation("iResolution");
+		uni_iMouse = GetUniformLocation("iMouse");
+		uni_iFont = GetUniformLocation("iFont");
+		uni_guiSize = GetUniformLocation("guiSize");
+
+		buf_opt.Init(prog_id, 8);
+		buf_head.Init(prog_id, 9);
+		buf_text.Init(prog_id, 10);
+
+		return 1;
+	}
+
+	int InitVbo(){
+		glGenVertexArrays(1, &vao);
+		glGenBuffers(1, &vbo);
+		glBindVertexArray(vao);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+		return 1;
+	}
 
 	void InsertMenu(int id, VString text){
 		MglGuiElements *el = els.NewE();
 		el->type = MGLGUI_TYPES_MENU;
 		el->id = id;
 		el->text = text;
+
+		update = 1;
 	}
 
 	void InsertToolbar(int id, VString text){
+		
+	}
 
+	// Update
+	void SetFont(GLuint f){
+		font_id = f;
+	}
 
+	void UpdateRes(KiVec2 res){
+		screen = res;
+
+		UseProgram();
+		glUniform2f(uni_iRes, res.x, res.y);
+		glUseProgram(0);
+	}
+
+	void UpdateHeadSize(int size){
+		UseProgram();
+		glUniform1i(uni_guiSize, size);
+		glUseProgram(0);
+	}	
+
+	// In
+	bool InRect(KiVec4 rect, KiVec2 coord){
+		if(coord.x > rect.x && coord.x < rect.z && coord.y > rect.y && coord.y < rect.w)
+			return true;
+		return false;
+	}
+
+	int OnClick(KiVec2 mouse){
+		MglGuiElements *el = 0;
+		//int update = 0;
+
+		while(el = els.Next(el)){			
+			if(InRect(el->rect, mouse)){
+				//el->etime = this_time + opt.hideTime;
+				return el->id;
+			}
+		}
+
+		return 0;
 	}
 
 	void Draw(){
+		update = 0;
+
+		// Update elements
 		DrawMenu();
 
+		// Count
 		MglGuiElements *el = 0;
+		int count = 0, text_count = 0;
 
+		while(el = els.Next(el)){			
+			text_count += el->text.size();
+			count ++;
+		}
 
+				// Memory
+		MString head_data, text_data;
+		int text_pos = 0;
 
+		// Text
+		text_data.Reserve(text_count * sizeof(int));
+		int *idata = (int*)text_data.data;
+
+		//Data
+		head_data.Reserve(sizeof(MglGuUpHead) * count);
+		MglGuUpHead *head = (MglGuUpHead*) head_data.data;
+
+				// Write
+		while(el = els.Next(el)){
+			//memcpy(data.data + text_pos, el->text, el->text.size());
+			for(int i = 0; i < el->text.size(); i ++){
+				*idata ++ = el->text[i];
+			}
+
+			head->id = 0;
+			head->rect = el->rect;// = KiVec4(pos.x - el->text.size() * opt.letterWidth - border, pos.y, pos.x, pos.y + cell_height);
+			head->text_pos = text_pos;
+			head->text_size = el->text.size();
+			head ++;
+
+			//pos.y += cell_height + opt.spaceHeight;
+			text_pos += el->text.size();
+		}
+
+		// Set options
+		buf_opt.SetUniformData(&opt, sizeof(opt));
+		buf_head.SetBufferData(head_data, head_data);
+		buf_text.SetBufferData(text_data, text_data);
+
+		UpdateHeadSize(count);
 	}
 
 	void DrawMenu(){
 		MglGuiElements *el = 0;
-		KiVec2 pos = 0;
+		KiVec2 pos = KiVec2(0, screen.y);
+		float border = opt.borderSize * 2 + opt.freeSize * 2;
 
 		// Update menu
 		while(el = els.Next(el)){
-			float size = el->text.size() * opt.letterWidth;
-			el->rect = KiVec4(pos.x, pos.y, pos.x + size, pos.y = opt.fontHeight);
+			float size = el->text.size() * opt.letterWidth + border;
+			el->rect = KiVec4(pos.x, pos.y -  opt.fontSize - border, pos.x + size, pos.y);
 			pos.x += size;
 		}
 	}	
+
+	void Render(float iTime){
+		//this_time = iTime;
+
+		if(update)
+			Draw();
+
+	   // activate corresponding render state	
+		UseProgram();
+		glActiveTexture(GL_TEXTURE0);
+		glBindVertexArray(vao);
+
+		glUniform1fv(uni_iTime, 1, &iTime);
+
+		float xpos = -1, ypos = -1;
+		float w = 2, h = 2;
+		
+		// update VBO for each character
+		float vertices[6][4] = {
+			{ xpos,     ypos + h,   0.0f, 0.0f },
+			{ xpos,     ypos,       0.0f, 1.0f },
+			{ xpos + w, ypos,       1.0f, 1.0f },
+
+			{ xpos,     ypos + h,   0.0f, 0.0f },
+			{ xpos + w, ypos,       1.0f, 1.0f },
+			{ xpos + w, ypos + h,   1.0f, 0.0f }
+		};
+
+		// render glyph texture over quad
+		glBindTexture(GL_TEXTURE_2D, font_id);
+		// update content of VBO memory
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+		//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		// render quad
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		// now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+
+		glBindVertexArray(0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glUseProgram(0);
+	}
 
 	~MglGui(){}
 

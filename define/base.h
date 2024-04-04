@@ -149,7 +149,7 @@ inline unsigned char upd(const unsigned char ch){ return ((ch>=97 && ch<=122 || 
 typedef unsigned char MACADDR[6];
 typedef unsigned char IPV6[16];
 struct MACADDR_S{ MACADDR mac; };
-typedef struct {
+typedef struct _IP6_ADDRESS {
   DWORD adr[4];
   operator bool(){ return adr[0] || adr[1] || adr[2] || adr[3]; }
 } IP6_ADDRESS;

@@ -111,7 +111,7 @@ public:
 		return (osv.dwPlatformId == VER_PLATFORM_WIN32_NT);
 	}
 
-	void ErrorMessage(char *str){  //вывод подробной информации об ошибке
+	void ErrorMessage(const char *str){  //вывод подробной информации об ошибке
 	LPVOID msg;
 
 	FormatMessage(
@@ -1212,7 +1212,7 @@ public:
 		return (osv.dwPlatformId == VER_PLATFORM_WIN32_NT);
 	}
 
-	void ErrorMessage(char *str){  //вывод подробной информации об ошибке
+	void ErrorMessage(const char *str){  //вывод подробной информации об ошибке
 		LPVOID msg;
 
 		FormatMessage(

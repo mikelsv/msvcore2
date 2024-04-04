@@ -288,7 +288,7 @@ private:
 				//glUseProgram(proc[i].prog);
 
 				// Channel data
-				XDataEl *bel = el(i < MGLSL_BUFFERS_MAX ? GenBuffName(i) : "fragment");
+				XDataEl *bel = el(i < MGLSL_BUFFERS_MAX ? GenBuffName(i) : VString("fragment"));
 
 				for(int j = 0; j < MGLSL_CHANNELS_MAX; j ++){
 					XDataEl *pel = bel->Get(GenChanName(j));

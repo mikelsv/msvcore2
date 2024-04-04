@@ -105,7 +105,8 @@ VString _proto, _domain, _path, _file, _name, _ext, _ipath, _iquest, _target;
 //int questpos=0;// ilink.sz;//, pos=0, lpos=0;
 unsigned char *q1=0, *q2=0;
 if(tp!=2 && (q1=ilink)!=0 && rts(ilink.endu(), '?', q1)) _iquest.data=q1;
-else if(tp!=1 && (q2=ilink)!=0 && rts(ilink.endu(), ' ', q2)) _iquest.data=q2;
+//else if(tp!=1 && (q2=ilink)!=0 && rts(ilink.endu(), ' ', q2)) _iquest.data=q2;
+else if (tp != 1 && (q2 = ilink) != 0 && rts(ilink.endu(), ' ', q2)) _iquest.data = q2;
 else _iquest.data=ilink.endu();
 _iquest.sz=ilink.endu()-_iquest.data;
 
