@@ -352,10 +352,13 @@ int ParamLineGet(int key, VString &val, unsigned char *k, VString *v, int sz){
 	return 0;
 }
 
-int PartLines(VString line, VString el, VString res[8]){
+int PartLines(VString line, VString el, VString *res, int count){
 	unsigned char *f = el, *l = el, *t = el.endu();
 	unsigned char *lf = line, *ll = line, *lt = line.endu();
 	int resi = 0;
+
+	if (!res || !count)
+		return 0;
 
 	// Read fragment
 	while(l < t){
@@ -401,7 +404,7 @@ int PartLines(VString line, VString el, VString res[8]){
 			l ++;
 		}
 
-		if(resi == 8 && l < t)
+		if(resi == count && l < t)
 			return -1;
 	}
 
