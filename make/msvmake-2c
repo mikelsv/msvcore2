@@ -37,8 +37,8 @@ release: all
 
 # Compile Files
 COMPILEFILES= ${PROJECTNAME} \
-	../../opensource/msvcore2/VString \
-	../../opensource/msvcore2/MString
+	../msvcore2/VString \
+	../msvcore2/MString
 COMPILEFILES += $(strip $(foreach file,$(FILES),$(file)))
 
 # Object Files
