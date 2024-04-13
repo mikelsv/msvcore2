@@ -193,6 +193,11 @@ class KiVec4{
 		return x == 0 && y == 0 && z == 0 && w == 0;
 	}
 
+	bool InRect(KiVec2 pos) {
+		return pos.x > min(x, z) && pos.x < max(x, z) && pos.y > min(y, w) && pos.y < max(y, w);
+		//return (x - pos.x + z - pos.x) <= abs(x - z) && (y - pos.y + w - pos.y) <= abs(y - z);
+	}
+
 	void UnionRect(KiVec4 rect){
 		x = min(x, rect.x);
 		y = min(y, rect.y);
@@ -209,6 +214,15 @@ class KiVec4{
 		w = 1.;
 	}
 
+	KiVec4 &operator+=(KiVec4 v) {
+		x += v.x;
+		y += v.y;
+		z += v.z;
+		w += v.w;
+
+		return *this;
+	}
+
 	KiVec4& operator-=(float v) {
 		x -= v;
 		y -= v;
@@ -218,10 +232,25 @@ class KiVec4{
 		return *this;
 	}
 
+	KiVec4 operator+(float v) {
+		return KiVec4(x + v, y + v, z + v, w + v);
+	}
+
+	KiVec4 operator+(KiVec4 v) {
+		return KiVec4(x + v.x, y + v.y, z + v.z, w + v.w);
+	}
+
 	KiVec4 operator-(float v) {
 		return KiVec4(x - v, y - v, z - v, w - v);
 	}
 
+	KiVec4 operator*(float v) {
+		return KiVec4(x * v, y * v, z * v, w * v);
+	}
+
+	KiVec4 operator/(float v) {
+		return KiVec4(x / v, y / v, z / v, w / v);
+	}
 };
 
 
