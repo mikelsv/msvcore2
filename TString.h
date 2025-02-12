@@ -45,6 +45,7 @@ public:
 	const TString& operator=(const unsigned char* line);
 	const TString& operator=(const VString& line);
 	//const TString& operator=(const MString& line);
+	const TString& operator=(const TString& line);
 
 	TString& set(const VString line);
 	TString& set(const char* line, const unsigned int size);
