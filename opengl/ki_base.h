@@ -64,6 +64,15 @@ public:
 		return sqrtf(x * x + y * y);
 	}
 
+	KiVec2 Normalize() {
+		float length = Length();
+
+		if (length > 0.0f)
+			return *this / length;
+
+		return *this;
+	}
+
 };
 
 class KiVec3{
@@ -196,6 +205,10 @@ class KiVec4{
 	bool InRect(KiVec2 pos) {
 		return pos.x > min(x, z) && pos.x < max(x, z) && pos.y > min(y, w) && pos.y < max(y, w);
 		//return (x - pos.x + z - pos.x) <= abs(x - z) && (y - pos.y + w - pos.y) <= abs(y - z);
+	}
+
+	KiVec2 GetCenter() {
+		return KiVec2(x + (z - x) / 2, y + (w - y) / 2);
 	}
 
 	void UnionRect(KiVec4 rect){

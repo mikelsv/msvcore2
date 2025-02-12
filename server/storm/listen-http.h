@@ -889,7 +889,8 @@ protected:
 			env + "SystemRoot=" + msvcorestate.winpath + _rc;
 
 			if(method == "POST"){
-				env + "CONTENT_TYPE=application/x-www-form-urlencoded" + _rc;
+				env + "CONTENT_TYPE=" + SafeCGI(PartLineDouble(head, "Content-Type: ", "\r\n")) + _rc;
+				//env + "CONTENT_TYPE=application/x-www-form-urlencoded" + _rc;
 				env + "CONTENT_LENGTH=" + post.size() + _rc;
 			}
 
