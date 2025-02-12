@@ -291,7 +291,8 @@ const TString& TString::operator=(const char string){ unsigned char* odata = dat
 const TString& TString::operator=(const char* line){ unsigned char *odata = data; sz = line ? strlen((const char*)line) : 0; StringNew(line); StringDel(odata); return *this; }
 const TString& TString::operator=(const unsigned char* line){ unsigned char *odata=data; sz = line ? strlen((const char*)line) : 0; StringNew(line); StringDel(odata); return *this; }
 const TString& TString::operator=(const VString& line){ unsigned char *odata = data; sz = line; StringNew(line); StringDel(odata); return *this; }
-const TString& TString::operator=(const MString& line){ unsigned char *odata=data; sz=line; MStringNew(line); _deln(odata); return *this; }
+//const TString& TString::operator=(const MString& line){ unsigned char *odata=data; sz=line; MStringNew(line); _deln(odata); return *this; }
+const TString& TString::operator=(const TString& line){ unsigned char *odata = data; sz = line; StringNew(line); StringDel(odata); return *this; }
 
 TString& TString::set(const VString line){ unsigned char *odata = data; sz = line.sz; StringNew(line); StringDel(odata); return *this; }
 TString& TString::set(const char* line, const unsigned int size){ unsigned char *odata = data; sz = size;  StringNew(line); StringDel(odata); return *this; }
