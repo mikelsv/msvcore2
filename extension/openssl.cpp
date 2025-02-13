@@ -5,6 +5,7 @@
 #else
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libssl.lib")
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libcrypto.lib") 
+	#pragma comment (lib, "crypt32")
 #endif
 #else
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\ssleay32.lib") 
@@ -191,6 +192,12 @@ int MySSL::AcceptFile(SOCKET sock, VString cert, VString key, int typefile){
 	return Accept(sock, cert, key, 1);
 }
 
+int MySSL::AcceptNoSsl(SOCKET sock){
+	work = MYSSLWORK_NO_SSL;
+	this->sock = sock;
+	return 1;
+}
+
 int MySSL::Accept(SOCKET sock, VString cert, VString key, int typefile){
 	MsspInit();
 	Release();
@@ -244,7 +251,7 @@ int MySSL::Accept(SOCKET sock, VString cert, VString key, int typefile){
 		}
 	}
 	else 
-		work = 1;
+		work = MYSSLWORK_OK;
 		
 	MsspFree(ctx);
 	MsspFree(ssl);
@@ -378,6 +385,9 @@ int MySSL::LoadCertFile(SSL_CTX *ctx, VString cert, VString key){
 }
 
 int MySSL::Recv(void *buf, int sz){
+	if(work == MYSSLWORK_NO_SSL)
+		return recv(sock, (char*)buf, sz, 0);
+
 	if(!work || !ssl)
 		return 0;
 
@@ -415,6 +425,9 @@ int MySSL::Recv(void *buf, int sz){
 }
 
 int MySSL::Send(const char *buf, int sz){
+	if(work == MYSSLWORK_NO_SSL)
+		return send(sock, (char*)buf, sz, 0);
+
 	if(!work || !ssl)
 		return 0;
 

@@ -11,18 +11,32 @@ public:
 };
 
 class LightServer{
+protected:
 	MString open_ip;
 	//unsigned int open_ip; unsigned short open_port;
-	SOCKET open_sock; int stopserver;
+	SOCKET open_sock;
+	int stopserver;
+
+	// Options
+	int count_connect, max_connect;
+
+	// Lock
+	TLock lock;
 
 public:
 	LightServer(){
 		open_sock = 0;
+		count_connect = 0;
+		max_connect = 0;
 		stopserver = 0;
 	}
 
 	void SetPort(VString ip){
-		open_ip=ip;
+		open_ip = ip;
+	}
+
+	void SetMaxCon(int v){
+		max_connect = v;
 	}
 
 	//void SetPort(unsigned short p, unsigned int ip=0){
@@ -31,7 +45,7 @@ public:
 
 
 	int StopServer(){
-		stopserver=1;
+		stopserver = 1;
 	}
 
 	int Listen(){
@@ -48,21 +62,36 @@ public:
 			return 0;
 
 		// Run server
-		stopserver=0;
+		stopserver = 0;
 
 		while(!stopserver){
 			FD_ZERO(&rfds); FD_ZERO(&efds); maxs=0;
 
-			FD_SET(open_sock, &rfds); maxs=open_sock+1;
+			FD_SET(open_sock, &rfds);
+			maxs = open_sock + 1;
 
-			tm.tv_sec=30; tm.tv_usec=0;
-			sel=select(maxs, &rfds, 0, 0, &tm); if(sel<1){ Sleep(100); }
+			tm.tv_sec = 30;
+			tm.tv_usec = 0;
+			sel = select(maxs, &rfds, 0, 0, &tm);
+			
+			if(sel < 1){
+				Sleep(100);
+			}
 
 			if(FD_ISSET(open_sock, &rfds)){
-				socks=accept(open_sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
-				if(socks<=0){
-					closesocket(open_sock); stopserver=1;
+				socks = accept(open_sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
+				if(socks <= 0){
+					closesocket(open_sock);
+					stopserver = 1;
 				}
+
+				if(max_connect && max_connect <= count_connect){
+					closesocket(socks);
+					continue;
+				}
+
+				UGLOCK(lock);
+				count_connect ++;
 
 				LightServerAccept acc;
 				acc.sock=socks; acc.cip=ntohl(from.sin_addr.s_addr); acc.cport=htons(from.sin_port);
@@ -70,7 +99,6 @@ public:
 				acc.tip=ntohl(from.sin_addr.s_addr); acc.tport=htons(from.sin_port);
 
 				Accept(acc);
-				closesocket(acc.sock);
 			}
 		}
 
@@ -78,9 +106,19 @@ public:
 	}
 
 	virtual int Accept(LightServerAccept &acc){
-		SString it; it.Add("LightServer(", lightserver_versions[0].ver, ", ", lightserver_versions[0].date,")");
+		SString it;
+		char buf[S16K];
+		//HTTP/1.0 200 OK\r\nConnection: close\r\n\r\n
+
+		int rcv = recv(acc.sock, buf, S16K, 0);
+
+		it.Add("LightServer(", lightserver_versions[0].ver, ", ", lightserver_versions[0].date,")");
 		send(acc.sock, it, it, 0);
-		//closesocket(acc.sock);
+		closesocket(acc.sock);
+
+		// Count
+		UGLOCK(lock);
+		count_connect --;
 		return 0;
 	}
 
@@ -127,6 +165,11 @@ public:
 		print("Connection close!\r\n");
 		closesocket(acc->sock);
 		delete acc;
+
+		// Count
+		UGLOCK(lock);
+		count_connect --;
+
 		return 0;
 	}
 
@@ -139,12 +182,19 @@ public:
 		if(cert_cert && cert_key){
 			ssl.Release();
 			ssl.Accept(acc.sock, cert_cert, cert_key);
-		}
+		} else
+			ssl.AcceptNoSsl(acc.sock);
 
 		while(1){
 			// read data from socket
 			if(ifrecv(acc.sock)){
-				int rcv = ssl.Recv((char*)(buf + pos), S32K - pos);
+				int rcv;
+
+				if(cert_cert)
+					rcv = ssl.Recv((char*)(buf + pos), S32K - pos);
+				else
+					rcv = recv(acc.sock, (char*)(buf + pos), S32K - pos, 0);
+
 				if(rcv <= 0)
 					break;
 
@@ -225,3 +275,368 @@ public:
 
 VString LightServerHttp::cert_cert;
 VString LightServerHttp::cert_key;
+
+#ifdef USEMSV_LIGHTSERVER_WEBSOCKET_PROCESS
+int USEMSV_LIGHTSERVER_WEBSOCKET_PROCESS(LightServerAccept *acc);
+#endif
+
+class LightServerWebsocket : public LightServer, public MSVMCOT{
+protected:
+	// certs
+	static VString cert_cert, cert_key;
+	// timeout
+	int recv_timeout;
+
+public:
+	LightServerWebsocket(){
+		recv_timeout = 0;
+	}
+
+	void SetCerts(VString cert, VString key){
+		cert_cert = cert;
+		cert_key = key;
+	}
+
+	void SetTimeout(int v){
+		recv_timeout = v;
+	}
+
+	virtual int Accept(LightServerAccept &acc){
+		// Call Accept() in new Thread.
+
+		LightServerAccept *nacc = new LightServerAccept;
+		*nacc = acc;
+		MCOTS(nacc);
+
+		return 1;
+	}
+
+	virtual DWORD MCOT(LPVOID lp){
+		LightServerAccept *acc = (LightServerAccept*)lp;
+		unsigned int ip;
+		unsigned short port;
+		SString s;
+
+		getcip(acc->sock, ip, port);
+		s.Format("New connection: %ip!:%d!\r\n", ip, port);
+		print(s);
+
+		AcceptData(*acc);
+		print("Connection close!\r\n");
+		closesocket(acc->sock);
+		delete acc;
+
+		// Count
+		UGLOCK(lock);
+		count_connect --;
+		return 0;
+	}
+
+	virtual int AcceptData(LightServerAccept &acc){
+		MySSL ssl;
+
+		// Use ssl sertificate
+		if(cert_cert && cert_key){
+			ssl.Release();
+			ssl.Accept(acc.sock, cert_cert, cert_key);
+		} else
+			ssl.AcceptNoSsl(acc.sock);
+
+		return RecvData(acc, ssl);
+
+	}
+
+	virtual int RecvData(LightServerAccept &acc, MySSL &ssl){
+		unsigned char buf[S32K];
+		unsigned int pos = 0;
+		int wstat = 0, readed = 0, close = 0;
+
+		while(1){
+			// read data from socket
+			if(ifrecv(acc.sock, recv_timeout)){
+				int rcv = ssl.Recv((char*)(buf + pos), S32K - pos);
+
+				if(rcv <= 0)
+					break;
+
+				pos += rcv;
+
+				// Analys
+				while(!close && pos){
+					readed = 0;
+
+					storm_recv(acc, ssl, wstat, VString(buf, pos), readed, close);
+
+					if(readed){
+						memcpy(buf, buf + readed, pos - readed);
+						pos -= readed;
+					}
+
+					if(!readed)
+						break;
+				}
+
+				if(close)
+					break;
+			}
+		}
+
+		ssl.Close();
+		return 0;
+	}
+
+	virtual void storm_recv(LightServerAccept &acc, MySSL &ssl, int &wstat, VString read, int &readed, int &close){
+		if(!wstat){
+			VString head, data;
+			head = PartLine(read, data, "\r\n\r\n");
+
+			if(data.data){
+				readed = head.size()+4;
+				head.sz += 4;
+
+				return AnalysHead(acc, ssl, wstat, head, data);
+			}
+			else 
+				return ;
+		}else{
+			int r, opcode;
+			VString msg;
+
+			while(1){
+				r = WebSocketDecodeData(read, opcode, msg);
+				if(r < 0)
+					return ;
+				if(r == 0){
+					close = 1;
+					return ;
+				}
+
+				AnalysData(acc, ssl, opcode, msg, close);
+				readed = r;
+
+				//if(!read || close)
+				return ;
+			}
+		}
+
+		return ;
+	}
+
+	virtual void AnalysHead(LightServerAccept &acc, MySSL &ssl, int &wstat, VString head, VString data){
+		//VString path = PartLineDouble(head, "GET ", " HTTP");
+		//VString host = PartLineDouble(head, "\r\nHost: ", "\r\n");
+		VString key = PartLineDouble(head, "\r\nSec-WebSocket-Key: ", "\r\n");
+		VString origin = PartLineDouble(head, "\r\nOrigin: ", "\r\n");
+
+		SString ret;
+		ret.Add("HTTP/1.1 101 Switching Protocols\r\n" \
+			"Upgrade: WebSocket\r\n" \
+            "Connection: Upgrade\r\n" \
+            //"Sec-WebSocket-Origin: ", origin, "\r\n" 
+			"Sec-WebSocket-Accept: ", WebSocketAcceptKey(key), "\r\n" \
+			//"Sec-WebSocket-Protocol: chat" "\r\n" 
+            "\r\n");
+
+		ssl.Send(ret, ret);
+		
+		wstat = 1;
+		return ;
+	}
+
+	virtual void AnalysData(LightServerAccept &acc, MySSL &ssl, int opcode, VString read, int &close){
+		switch(opcode){
+			case LWSOC_STRING:{
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
+				ssl.Send(ret, ret);
+			}
+			break;
+
+			case LWSOC_BINARY:{
+				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
+				ssl.Send(ret, ret);
+			}
+			break;
+
+			case LWSOC_PING:{
+				MString ret = WebSocketEncodeData(LWSOC_PONG, MString());
+				ssl.Send(ret, ret);
+			}
+			break;
+
+			case LWSOC_CLOSE:
+			default:
+				close = 1;
+			break;
+		}
+
+		return ;
+	}
+};
+
+VString LightServerWebsocket::cert_cert;
+VString LightServerWebsocket::cert_key;
+
+#ifdef STORMSERVER_CORE_MODSTATE
+
+#define STORM_DEBUG_CMD_HELLO	1
+#define STORM_DEBUG_CMD_STATE	2
+#define STORM_DEBUG_CMD_SOCKET	3
+
+struct StormDebugCmdTempl{
+	//int head; // 0xdeadf00d
+	int type;
+	int size;
+	//int crc;
+	// Data
+
+	int Encode(int t, int s){
+		//head = 0xdeadf00d;
+		type = t;
+		size = s;
+		//crc = Crc();
+
+		return 1;
+	}
+
+	int Crc(){
+		int c = 0;
+
+		char *l = (char*)this, *t = l + size;
+		while(l < t){
+			if(l + 4 <= t)
+				c += *(int*)l;
+			else if(l + 2 <= t)
+				c += *(short*)l;
+			else
+				c += *(char*)l;
+
+			l += 4;
+		}
+
+		//crc = c;
+		return 1;
+	}
+
+	operator unsigned char *(){
+		return (unsigned char*) this;
+	}
+
+	operator unsigned int(){
+		return size;
+	}
+};
+
+struct StormDebugCmdState: public StormDebugCmdTempl, public _listen_http_modstate_state{
+
+	void Encode(){
+		_listen_http_modstate_state *s = this;
+		*s = *listen_http_modstate.GetState();
+
+		type = STORM_DEBUG_CMD_STATE;
+		size = sizeof(*this);
+	}
+
+};
+
+class LightServerWebDebug : public LightServerWebsocket{
+
+	void SendHello(LightServerAccept &acc, MySSL &ssl){
+		_listen_http_modstate_dbg_templ hello;
+		hello.Encode(STORM_DEBUG_CMD_HELLO, sizeof(hello));
+
+		WebSocketEncodeS1K enc;
+		enc.Encode(LWSOC_BINARY, hello, hello);
+		send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+	}
+
+	void StatTime(LightServerAccept &acc, MySSL &ssl, unsigned int stime){
+		unsigned int tm = time(0);
+
+		// Send new data
+		if(stime + 3 < tm){
+			stime = tm;
+
+			SendState(acc, ssl);
+		}
+	}
+
+	void SendState(LightServerAccept &acc, MySSL &ssl){
+		_listen_http_modstate_dbg_state state;
+		state.Encode(listen_http_modstate.GetState());
+
+		WebSocketEncodeS1K enc;
+		enc.Encode(LWSOC_BINARY, state, state);
+		send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+	}
+
+	virtual int RecvData(LightServerAccept &acc, MySSL &ssl){
+		unsigned char buf[S32K], dbuf[S32K];
+		unsigned int pos = 0;
+		int wstat = 0, hello = 0, readed = 0, close = 0;
+		unsigned int stime = 0;
+
+		// Debug
+		unsigned int debug_rid = listen_http_modstate.StartDebug();// MyStormCore.StartDebug();
+
+		while(1){
+			// read data from socket
+			if(ifrecv(acc.sock, 0)){
+				int rcv = ssl.Recv((char*)(buf + pos), S32K - pos);
+
+				if(rcv <= 0)
+					break;
+
+				pos += rcv;
+
+				// Analys
+				while(!close && pos){
+					readed = 0;
+
+					storm_recv(acc, ssl, wstat, VString(buf, pos), readed, close);
+
+					if(readed){
+						memcpy(buf, buf + readed, pos - readed);
+						pos -= readed;
+					}
+
+					if(!readed)
+						break;
+				}
+
+				if(close)
+					break;		
+			}
+
+			// Send hello
+			if(!hello && wstat){
+				SendHello(acc, ssl);
+				hello = 1;
+			}
+
+			if(wstat){
+				StatTime(acc, ssl, stime);
+
+				//RingTime(acc, ssl, debug_rid);
+			}			
+
+			// Debug data
+			int count = listen_http_modstate.ReadDebug(debug_rid, dbuf, sizeof(dbuf));
+			if(count){
+				if(count < 0)
+					break;
+
+				WebSocketEncodeS1K enc;
+				enc.Encode(LWSOC_BINARY, dbuf, count);
+
+				send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+			}
+		}
+
+		listen_http_modstate.EndDebug();
+		ssl.Close();
+		return 0;
+	}
+
+};
+
+#endif

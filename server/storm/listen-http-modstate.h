@@ -140,6 +140,7 @@ public:
 unsigned int msrc_null_code = 0xc0de;
 uint64 msrc_null_test = 0xc04eda1a1e311e31; // 0xc04e da1a 1e31 1e31 // code: core data test test
 
+/*
 class modstate_ring_buffer : public TLock{
 	MString data;
 	TLock lock;
@@ -200,16 +201,165 @@ public:
 
 		return r;
 	}
+};*/
+
+class storm_binary_ring {
+	static const int ring_sz = S16K;
+	char data[ring_sz];
+	unsigned int pos;
+
+public:
+	storm_binary_ring(){
+		pos = 0;
+	}
+
+	int write(unsigned char *d, int size){
+		while(size){
+			if(pos == ring_sz)
+				pos = 0;
+
+			int s = min(size, ring_sz - pos);
+			memcpy(data + pos, d, s);
+			pos += s;
+			size -= s;
+			d += s;
+		}
+
+		return 1;
+	}
+
+	int read(int rid, unsigned char *d, int size){
+		unsigned int rsize = 0;
+
+		while(pos != rid && size){
+			int s = min(size, rid < pos ? pos - rid : ring_sz - pos);
+			memcpy(d, data + rid, s);
+
+			d += s;
+			size -= s;
+			rsize += s;
+
+			if(rid == ring_sz)
+				rid = 0;
+		}
+
+		return rsize;
+	}
+
+	int readed(unsigned int rid, unsigned int sz){
+		rid += sz;
+		if(rid >= ring_sz)
+			rid -= ring_sz;
+
+		return rid;
+	}
+
+	bool is(unsigned int rid){
+		return pos != rid;
+	}
+
+	unsigned int getpos(){
+		return pos;
+	}
+
 };
 
-class _listen_http_modstate : public TLock{
-	// Activate State
-	int state_on;
-	
-	// Connect, Close
-	int64 state_con, state_close;
+class _listen_http_modstate_state{
+public:
+	int state_con, state_close;
 	int64 state_http_req;
 	int64 state_recv_all, state_send_all;
+
+	_listen_http_modstate_state(){
+		state_con = 0;
+		state_close = 0;
+		state_http_req = 0;
+		state_recv_all = 0;
+		state_send_all = 0;
+	}
+
+};
+
+// Debug log
+#define STORM_DEBUG_CMD_HELLO	1
+#define STORM_DEBUG_CMD_STATE	2
+#define STORM_DEBUG_CMD_ACCEPT	3
+//#define STORM_DEBUG_CMD_SOCKET	4
+#define STORM_DEBUG_CMD_RECV	4
+#define STORM_DEBUG_CMD_SEND	5
+#define STORM_DEBUG_CMD_CLOSE	6
+
+#pragma pack(push, 4) // Set alignment to 1 byte
+
+class _listen_http_modstate_dbg_templ{
+public:
+	unsigned int head;
+	unsigned int size;
+	unsigned int type;
+
+	void Encode(unsigned int t, unsigned int sz){
+		head = 0xdeadf00d;
+		type = t;
+		size = sz;
+	}
+
+	operator unsigned char *(){
+		return (unsigned char*) this;
+	}
+
+	operator unsigned int(){
+		return size;
+	}
+};
+
+class _listen_http_modstate_dbg_state : public _listen_http_modstate_dbg_templ, public _listen_http_modstate_state{
+public:
+
+	void Encode(_listen_http_modstate_state* state){
+		_listen_http_modstate_dbg_templ::Encode(STORM_DEBUG_CMD_STATE, sizeof(*this));
+		
+		_listen_http_modstate_state *s = this;
+		*s = *state;
+	}
+};
+
+class _listen_http_modstate_dbg_accept : public _listen_http_modstate_dbg_templ{
+public:
+	unsigned int sock;
+	unsigned int cip, tip;
+	unsigned short cport, tport;
+
+	void Encode(){
+		_listen_http_modstate_dbg_templ::Encode(STORM_DEBUG_CMD_ACCEPT, sizeof(*this));
+	}
+};
+
+class _listen_http_modstate_dbg_traff : public _listen_http_modstate_dbg_templ{
+public:
+	unsigned int sock;
+	unsigned int traff;
+
+	void Encode(int type){
+		_listen_http_modstate_dbg_templ::Encode(type, sizeof(*this));
+	}
+};
+
+class _listen_http_modstate_dbg_close : public _listen_http_modstate_dbg_templ{
+public:
+	unsigned int sock;
+
+	void Encode(){
+		_listen_http_modstate_dbg_templ::Encode(STORM_DEBUG_CMD_CLOSE, sizeof(*this));
+	}
+};
+
+#pragma pack(pop)
+
+class _listen_http_modstate : public _listen_http_modstate_state, public TLock{
+	// Activate State
+	int state_on;
+
+	// _listen_http_modstate_state here
 
 	// http request ring
 	listen_http_msring<120> r_httpreq_hour, r_httpreq_min, r_httpreq_sec;
@@ -219,8 +369,12 @@ class _listen_http_modstate : public TLock{
 	// Core
 	int64 sock_accept, sock_conn, sock_close;
 
+public:
+
 	// Ring
-	modstate_ring_buffer ring;
+	storm_binary_ring debug_ring;
+	TLock debug_lock;
+	//modstate_ring_buffer ring;
 	unsigned int ring_time;
 
 	//struct hr_ring{ };
@@ -234,17 +388,6 @@ public:
 	
 	_listen_http_modstate(){
 		state_on = 0;
-
-		state_con = 0;
-		state_close = 0;
-		state_http_req = 0;
-
-		state_recv_all = 0;
-		state_send_all = 0;
-
-//		hrring_tm = 0;
-//		hrring_pos = 0;
-//		memset(hrring, 0, sizeof(hrring));
 
 		sock_accept = 0;
 		sock_conn = 0;
@@ -261,7 +404,13 @@ public:
 		state_on = v;
 	}
 
+	// State
+	_listen_http_modstate_state* GetState(){
+		return this;
+	}
+
 	// Ring
+	/*
 	struct modstate_ring_struct{
 		unsigned int code;
 		unsigned char data[S1K];
@@ -292,7 +441,7 @@ public:
 
 		if(ring_time + 60 < time())
 			OnWriteTime();
-	}
+	}*/
 
 	//void WriteRing0(){
 		//VString ring0 = "RING NULL CODE ~!@#$%^&*()_+";
@@ -313,12 +462,19 @@ public:
 		unsigned short cport, tport;
 		SString ss;
 
-		gettip(sock, cip, cport);
-		getcip(sock, tip, tport);
+		// Debug
+		_listen_http_modstate_dbg_accept state;
+		state.Encode();
 
-		ss.Add(VString((char*)&sock, 4), VString((char*)&cip, 4), VString((char*)&cport, 2),VString((char*)&tip, 4), VString((char*)&tport, 2));
+		state.sock = sock;
+		gettip(sock, state.cip, state.cport);
+		getcip(sock, state.tip, state.tport);
 
-		WriteRing(MSRC_ACCEPT, ss);
+		debug_ring.write(state, state);
+
+		//ss.Add(VString((char*)&sock, 4), VString((char*)&cip, 4), VString((char*)&cport, 2),VString((char*)&tip, 4), VString((char*)&tport, 2));
+
+		//WriteRing(MSRC_ACCEPT, ss);
 	}
 
 	void OnDisconnect(SOCKET sock){
@@ -326,24 +482,31 @@ public:
 		sock_close ++;
 		sock_conn --;
 
-		VString line = VString((char*)&sock, 4);
+		// Debug
+		_listen_http_modstate_dbg_close state;
+		state.sock = sock;
 
-		WriteRing(MSRC_CLOSE, line);
+		state.Encode();
+		debug_ring.write(state, state);
+
+//		VString line = VString((char*)&sock, 4);
+
+//		WriteRing(MSRC_CLOSE, line);
 	}
 
-	void OnWriteTime(){
-		ALOCK(this);
-		ring_time = time();
+	//void OnWriteTime(){
+	//	ALOCK(this);
+	//	ring_time = time();
 
-		SString ss;
+	//	SString ss;
 
-		ss.Add(VString((char*)&sock_accept, 8), VString((char*)&sock_conn, 8), VString((char*)&sock_close, 8));
-		WriteRing(MSRC_SOCKS, ss);
+	//	ss.Add(VString((char*)&sock_accept, 8), VString((char*)&sock_conn, 8), VString((char*)&sock_close, 8));
+	//	WriteRing(MSRC_SOCKS, ss);
 
-		// #define MSRC_STATE		5	// state_http_req, state_recv_all, state_send_all
-		ss.Add(VString((char*)&state_http_req, 8), VString((char*)&state_recv_all, 8), VString((char*)&state_send_all, 8));
-		WriteRing(MSRC_STATE, ss);
-	}
+	//	// #define MSRC_STATE		5	// state_http_req, state_recv_all, state_send_all
+	//	ss.Add(VString((char*)&state_http_req, 8), VString((char*)&state_recv_all, 8), VString((char*)&state_send_all, 8));
+	//	WriteRing(MSRC_STATE, ss);
+	//}
 
 	void OnHttpRequest(SOCKET sock, VString site, VString line){
 		SString ss;
@@ -353,13 +516,13 @@ public:
 		if(line.sz > 500)
 			line.sz = 500;
 
-		ss.Add(VString((char*)&sock, 4), VString((char*)&site.sz, 4), site, VString((char*)&line.sz, 4), line);
-		WriteRing(MSRC_HTTP_REQ, ss);
+		//ss.Add(VString((char*)&sock, 4), VString((char*)&site.sz, 4), site, VString((char*)&line.sz, 4), line);
+		//WriteRing(MSRC_HTTP_REQ, ss);
 	}
 
-	unsigned int OnRead(unsigned int pos, VString line){
-		return ring.Read(pos, line);
-	}
+	//unsigned int OnRead(unsigned int pos, VString line){
+	//	return ring.Read(pos, line);
+	//}
 
 	//
 	void OnConnect(){//SOCKET sock, unsigned int ip){
@@ -376,7 +539,7 @@ public:
 		state_close ++;
 	}
 
-	void OnRecv(int sz){
+	void OnRecv(SOCKET sock, int sz){
 		LISTEN_HTTP_MODSTATE_ON;
 
 		if(sz <= 0)
@@ -391,10 +554,18 @@ public:
 		r_recv_min.Add(tm / 60, sz);
 		r_recv_sec.Add(tm, sz);
 
+		// Debug
+		_listen_http_modstate_dbg_traff state;
+		state.sock = sock;
+		state.traff = sz;
+
+		state.Encode(STORM_DEBUG_CMD_RECV);
+		debug_ring.write(state, state);
+
 		return ;
 	}
 
-	void OnSend(int sz){
+	void OnSend(SOCKET sock, int sz){
 		LISTEN_HTTP_MODSTATE_ON;
 
 		if(sz <= 0)
@@ -408,6 +579,14 @@ public:
 		r_send_hour.Add(tm / 3600, sz);
 		r_send_min.Add(tm / 60, sz);
 		r_send_sec.Add(tm, sz);
+
+		// Debug
+		_listen_http_modstate_dbg_traff state;
+		state.sock = sock;
+		state.traff = sz;
+
+		state.Encode(STORM_DEBUG_CMD_SEND);
+		debug_ring.write(state, state);
 
 		return ;
 	}
@@ -595,6 +774,37 @@ public:
 		//ls + "Last 60 sec: " + cnt + "<br>";
 
 		return ls;
+	}
+
+	unsigned int StartDebug(){
+		return debug_ring.getpos();
+	}
+
+	int ReadDebug(unsigned int &rid, unsigned char *buf, unsigned int size){
+		if(!debug_ring.is(rid))
+			return 0;
+
+		unsigned int head[3];
+		int s = debug_ring.read(rid, (unsigned char*)head, sizeof(head));
+
+		if(head[1] > size){
+			print("FATAL ERROR: small buffer!");
+			return 0;
+		}
+
+		s = debug_ring.read(rid, buf, head[1]);
+		rid = debug_ring.readed(rid, s);
+
+		return s;
+	}
+
+	void WriteDebug(VString data){
+		UGLOCK(debug_lock);
+		debug_ring.write(data, data);
+	}
+
+	void EndDebug(){
+		return ;
 	}
 
 };

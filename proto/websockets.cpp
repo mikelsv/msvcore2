@@ -95,7 +95,7 @@ int WebSocketDecodeData(VString read, int &r_opcode, VString &r_value){
 		return lpos + len;
 }
 
-MString WebSocketEncodeData(int type, VString data, int fin = 1){
+int prmf_websocket_encode(unsigned char *ret, unsigned int rsz, int type, unsigned char *data, unsigned int size, int fin = 1){
 	unsigned char buf[10];
 	int mask = rand(), lpos;
 
@@ -104,35 +104,36 @@ MString WebSocketEncodeData(int type, VString data, int fin = 1){
 
 	buf[0] = (fin << 7) + (type&15);
 
-	if(data.sz <= 125){
-		buf[1] = data.sz + (mask ? 128 : 0);
+	if(size <= 125){
+		buf[1] = size + (mask ? 128 : 0);
 		lpos = 2;
-	}else if(data.sz <= 65535){
+	}else if(size <= 65535){
 		buf[1] = 126 + (mask ? 128 : 0);
-		*(unsigned short*)(buf + 2) = htons(data.sz);
+		*(unsigned short*)(buf + 2) = htons(size);
 		lpos = 4;
 	} else{
 		buf[1] = 127 + (mask ? 128 : 0);
-		*(uint64*)(buf + 2) = htonll(data.sz);
+		*(uint64*)(buf + 2) = htonll(size);
 		lpos = 10;
 	}
 
-	MString ret;
-	ret.Reserve(lpos + (mask ? 4 : 0) + data.sz);
-	if(!ret)
-		return MString();
+	int rsize = lpos + (mask ? 4 : 0) + size;
 
-	unsigned char *l = ret.data + lpos + (mask ? 4 : 0);
+	if(!ret || rsz < rsize)
+		return rsize;
 
-	memcpy(ret.data, buf, lpos);
-	memcpy(l, data, data);
+	// On memory
+	unsigned char *l = ret + lpos + (mask ? 4 : 0);
+
+	memcpy(ret, buf, lpos);
+	memcpy(l, data, size);
 
 	if(mask){
-		unsigned char *t = l + data.sz;
-		unsigned char *ft = t - (data.sz % 4);
+		unsigned char *t = l + size;
+		unsigned char *ft = t - (size % 4);
 		unsigned char *m = (unsigned char*)&mask;
 
-		memcpy(ret.data + lpos, &mask, 4);
+		memcpy(ret + lpos, &mask, 4);
 
 		for(l; l < ft; l += 4){
 			*(l+0) ^= m[0];
@@ -145,8 +146,49 @@ MString WebSocketEncodeData(int type, VString data, int fin = 1){
 			*l ^= *m++;
 	}
 
+	return rsize;
+}
+
+MString WebSocketEncodeData(int type, VString data, int fin = 1){
+	MString ret;
+	
+	ret.Reserve(prmf_websocket_encode(0, 0, type, data, data, fin));
+	prmf_websocket_encode(ret, ret, type, data, data, fin);
+
 	return ret;
 }
+
+class WebSocketEncodeS1K{
+	unsigned char data[S1K + 16];
+	int size;
+
+public:
+	WebSocketEncodeS1K(){
+		size = 0;
+	}
+
+	VString GetData(){
+		return VString(data, size);
+	}
+
+	unsigned int GetSize(){
+		return size;
+	}
+
+	int Encode(int type, VString d){
+		return Encode(type, d, d);
+	}
+
+	int Encode(int type, unsigned char *d, unsigned int sz){
+		if(sz > S1K)
+			return 0;
+
+		size = prmf_websocket_encode(data, S1K, type, d, sz);
+
+		return size;
+	}
+
+};
 
 
 struct WebSocketCliTraff{

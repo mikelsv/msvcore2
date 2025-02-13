@@ -3,7 +3,7 @@ void storm_work_el::send(VString line){
 		return ;
 
 	int sd = item->storm_socket_send(data->sock, line, line, 0);
-	listen_http_modstate.OnSend(sd);
+	listen_http_modstate.OnSend(data->sock, sd);
 
 #ifdef STORMSERVER_PRINT_SEND
 				SString it;

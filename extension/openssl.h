@@ -14,11 +14,12 @@
 #define MYSSLWORK_OK			1
 #define MYSSLWORK_WANT_READ		SSL_ERROR_WANT_READ
 #define MYSSLWORK_WANT_WRITE	SSL_ERROR_WANT_WRITE
+#define MYSSLWORK_NO_SSL		4
 
 class MySSL{
 	SSL *ssl;
 	SSL_CTX *ctx;
-	int work;
+	int work, sock;
 
 public:
 	MySSL();
@@ -27,6 +28,7 @@ public:
 	int Connect(SOCKET sock);
 	int AcceptFile(SOCKET sock, VString cert, VString key, int typefile = 0);
 	int Accept(SOCKET sock, VString cert, VString key, int typefile = 0);
+	int AcceptNoSsl(SOCKET sock);
 	int LoadCert(SSL_CTX *ctx, VString cert, VString key, int typefile = 0);
 	int LoadCertFile(SSL_CTX *ctx, VString cert, VString key);
 	int Recv(void *buf, int sz);

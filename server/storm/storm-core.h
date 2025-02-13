@@ -343,8 +343,6 @@ public:
 
 };
 
-
-
 // storm core
 class StormCore : public StormCoreVirtual, public MSVCOT, public MSVMCOT{
 	// sockets block
@@ -354,11 +352,15 @@ class StormCore : public StormCoreVirtual, public MSVCOT, public MSVMCOT{
 	// rings
 	storm_work_ring select_ring, work_ring, select_ring_e;
 	// lock
-	TLock socket_free_lock, socket_work_lock;//, socket_epoll_lock;
+	TLock socket_free_lock, socket_work_lock, debug_lock;//, socket_epoll_lock;
 	CLock cond_lock;
 	// statistics
 	int sockets_count, sockets_count_select;
 	int is_socket_poll_work;
+	// debug
+	bool debug_enable;
+	int debug_count;
+	storm_binary_ring debug_ring;
 
 	// threads
 	TLock threads_lock;
@@ -434,6 +436,9 @@ public:
 		sockets_count = 0;
 		sockets_count_select = 0;
 		is_socket_poll_work = 0;
+
+		debug_enable = 0;
+		debug_count = 0;
 
 #ifdef STORMSERVER_POLL_EPOLL
 		epoll_fd = epoll_create1(0);
@@ -654,7 +659,7 @@ public:
 //#ifdef STORMSERVER_POLL_EPOLL
 		if(!sdata->sd.Size() && ifsend(sdata->sock)){
 			int sd = sdata->item->storm_socket_send(sdata->sock, line, line, 0);
-			listen_http_modstate.OnSend(sd);
+			listen_http_modstate.OnSend(sdata->sock, sd);
 			//print(HLString() + "S(" + data->sock + "): " + sd + "/" + line.sz + "\r\n");
 
 #ifdef STORMSERVER_PRINT_SEND
@@ -1243,7 +1248,7 @@ public:
 					return -1;
 				}
 
-				listen_http_modstate.OnRecv(rsz);
+				listen_http_modstate.OnRecv(el->sock, rsz);
 
 #ifdef STORMSERVER_PRINT_RECV
 				SString it;
@@ -1300,7 +1305,7 @@ public:
 					return 1;
 				}
 
-				listen_http_modstate.OnSend(sd);
+				listen_http_modstate.OnSend(el->sock, sd);
 
 #ifdef STORMSERVER_PRINT_SEND
 				SString it;
@@ -1330,7 +1335,7 @@ public:
 				return -1;
 
 			int sd = el->item->storm_socket_send(el->sock, (char*)buff, rd, 0);
-			listen_http_modstate.OnSend(sd);
+			listen_http_modstate.OnSend(el->sock, sd);
 
 #ifdef STORMSERVER_PRINT_SEND
 				SString it;
@@ -1435,5 +1440,50 @@ public:
 
 
 #endif
+
+	// Debug //
+
+	bool DebugEnable(bool v){
+		return debug_enable = v;
+	}
+
+	bool IsDebug(){
+		return debug_enable;
+	}
+
+	unsigned int StartDebug(){
+		UGLOCK(debug_lock);
+
+		if(!debug_enable)
+			return 0;
+
+		debug_count ++;
+
+		return debug_ring.getpos();
+	}
+
+	void DebugConnect(){
+
+		return ;
+	}
+
+	void ReadDebug(int pos, char *buf, int size){
+		UGLOCK(debug_lock);
+
+
+		return ;
+	}
+
+	void EndDebug(){
+		UGLOCK(debug_lock);
+
+		if(debug_count > 0)
+			debug_count --;
+		else {
+			print("StormFatal in EndDebug(): debug_count < 0");			
+		}
+
+		return ;
+	}
 
 };

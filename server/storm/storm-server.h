@@ -82,7 +82,7 @@ public:
 	}
 
 	int OpenPort(){
-		ConfLine cf(conf);		
+		//ConfLine cf(conf);		
 		ConIp cip;
 		//cip.ReUse(cf["rain.reuse"].toi());
 		cip.ReUse(1);
@@ -124,20 +124,16 @@ public:
 			conpos2=i;
 
 			// Select
-			tm.tv_sec=1; tm.tv_usec=30000;
-			int sel=select(maxs, &rfds, 0, 0, &tm);
-			if(sel<0)
+			tm.tv_sec = 1;
+			tm.tv_usec = 30000;
+
+			int sel = select(maxs, &rfds, 0, 0, &tm);
+			if(sel < 0)
 				return;
 
-			for(i=conpos; i<conpos2; i++){
+			for(i = conpos; i < conpos2; i++){
 				if(FD_ISSET(cons[i].sock, &rfds)){
-					SOCKET sock=accept(cons[i].sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
-
-					//VString s = "HTTP/1.1 200 OK\r\n"; // test
-					//send(sock, s, s, 0);
-					////shutdown(sock, SD_SEND);
-					//closesocket(sock);
-					//sock = 0;
+					SOCKET sock = accept(cons[i].sock, (struct sockaddr*)&from, (socklen_t*)&fromlen);
 
 					if(sock <= 0)
 						continue;

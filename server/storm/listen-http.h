@@ -278,7 +278,7 @@ protected:
 			wel.readed(read, head);
 
 #ifdef STORMSERVER_CORE_MODSTATE
-			listen_http_modstate.OnHttpRequest(wel.data->sock, PartLineDoubleUp(head, "\r\Host: ", "\r\n"), PartLineO(h, "\r\n"));
+			listen_http_modstate.OnHttpRequest(wel.data->sock, PartLineDoubleUp(head, "\r\nHost: ", "\r\n"), PartLineO(h, "\r\n"));
 #endif
 
 			// Websocket
@@ -1030,7 +1030,7 @@ protected:
 
 			case LWSOC_BINARY:{
 				// Get ModState
-#ifdef STORMSERVER_CORE_MODSTATE
+/*#ifdef STORMSERVER_CORE_MODSTATE
 				if(read.sz == 8){
 					unsigned int code, pos;
 					code = *(unsigned int*)read.data;
@@ -1049,7 +1049,7 @@ protected:
 						return ;
 					}
 				}
-#endif
+#endif*/
 
 				MString ret = WebSocketEncodeData(LWSOC_STRING, LString() + "recieved: " + read);
 				wel.send(ret);
