@@ -489,7 +489,7 @@ class LightServerWebDebug : public LightServerWebsocket{
 		ssl.Send(enc.GetData(), enc.GetSize());
 	}
 
-	void StatTime(LightServerAccept &acc, MySSL &ssl, unsigned int stime){
+	void StatTime(LightServerAccept &acc, MySSL &ssl, unsigned int &stime){
 		unsigned int tm = time(0);
 
 		// Send new data
