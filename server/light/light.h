@@ -478,66 +478,6 @@ VString LightServerWebsocket::cert_key;
 
 #ifdef STORMSERVER_CORE_MODSTATE
 
-#define STORM_DEBUG_CMD_HELLO	1
-#define STORM_DEBUG_CMD_STATE	2
-#define STORM_DEBUG_CMD_SOCKET	3
-
-struct StormDebugCmdTempl{
-	//int head; // 0xdeadf00d
-	int type;
-	int size;
-	//int crc;
-	// Data
-
-	int Encode(int t, int s){
-		//head = 0xdeadf00d;
-		type = t;
-		size = s;
-		//crc = Crc();
-
-		return 1;
-	}
-
-	int Crc(){
-		int c = 0;
-
-		char *l = (char*)this, *t = l + size;
-		while(l < t){
-			if(l + 4 <= t)
-				c += *(int*)l;
-			else if(l + 2 <= t)
-				c += *(short*)l;
-			else
-				c += *(char*)l;
-
-			l += 4;
-		}
-
-		//crc = c;
-		return 1;
-	}
-
-	operator unsigned char *(){
-		return (unsigned char*) this;
-	}
-
-	operator unsigned int(){
-		return size;
-	}
-};
-
-struct StormDebugCmdState: public StormDebugCmdTempl, public _listen_http_modstate_state{
-
-	void Encode(){
-		_listen_http_modstate_state *s = this;
-		*s = *listen_http_modstate.GetState();
-
-		type = STORM_DEBUG_CMD_STATE;
-		size = sizeof(*this);
-	}
-
-};
-
 class LightServerWebDebug : public LightServerWebsocket{
 
 	void SendHello(LightServerAccept &acc, MySSL &ssl){
@@ -546,7 +486,7 @@ class LightServerWebDebug : public LightServerWebsocket{
 
 		WebSocketEncodeS1K enc;
 		enc.Encode(LWSOC_BINARY, hello, hello);
-		send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+		ssl.Send(enc.GetData(), enc.GetSize());
 	}
 
 	void StatTime(LightServerAccept &acc, MySSL &ssl, unsigned int stime){
@@ -566,7 +506,7 @@ class LightServerWebDebug : public LightServerWebsocket{
 
 		WebSocketEncodeS1K enc;
 		enc.Encode(LWSOC_BINARY, state, state);
-		send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+		ssl.Send(enc.GetData(), enc.GetSize());
 	}
 
 	virtual int RecvData(LightServerAccept &acc, MySSL &ssl){
@@ -628,7 +568,7 @@ class LightServerWebDebug : public LightServerWebsocket{
 				WebSocketEncodeS1K enc;
 				enc.Encode(LWSOC_BINARY, dbuf, count);
 
-				send(acc.sock, enc.GetData(), enc.GetSize(), 0);
+				ssl.Send(enc.GetData(), enc.GetSize());
 			}
 		}
 
