@@ -255,3 +255,7 @@ int main(int args, char* arg[], char* env[]){
 	#include "special/interception.h"
 #endif
 #endif
+
+#ifdef USEMSV_IMGUI
+	#include "MWnd/imgui.h"
+#endif

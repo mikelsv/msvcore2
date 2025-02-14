@@ -562,12 +562,19 @@ class LightServerWebDebug : public LightServerWebsocket{
 			// Debug data
 			int count = listen_http_modstate.ReadDebug(debug_rid, dbuf, sizeof(dbuf));
 			if(count){
-				if(count < 0)
+				if(count < 0){
+					_listen_http_modstate_dbg_2ui error;
+					error.Encode(STORM_DEBUG_CMD_ERROR, count == -1 ? STORM_DEBUG_CMD_ERROR_RING : STORM_DEBUG_CMD_ERROR_SIZE, 0);
+
+					WebSocketEncodeS1K enc;
+					enc.Encode(LWSOC_BINARY, error, error);
+					ssl.Send(enc.GetData(), enc.GetSize());
+
 					break;
+				}
 
 				WebSocketEncodeS1K enc;
 				enc.Encode(LWSOC_BINARY, dbuf, count);
-
 				ssl.Send(enc.GetData(), enc.GetSize());
 			}
 		}

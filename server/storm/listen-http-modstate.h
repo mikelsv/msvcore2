@@ -140,71 +140,8 @@ public:
 unsigned int msrc_null_code = 0xc0de;
 uint64 msrc_null_test = 0xc04eda1a1e311e31; // 0xc04e da1a 1e31 1e31 // code: core data test test
 
-/*
-class modstate_ring_buffer : public TLock{
-	MString data;
-	TLock lock;
-	unsigned int pos;
-
-public:
-
-	modstate_ring_buffer(){
-		data.Reserve(S1M);
-		pos = 0;
-	}
-
-	int Write(VString line){
-		if(!line || line > S1M - 16)
-			return 0;
-
-		ALOCK(this);
-		int again = 0;
-
-		if(pos == 0)
-			again = 1;
-
-		int f = data.sz - pos;
-		int s = minel(f, line.sz);
-
-		memcpy(data.data + pos, line, s);
-		pos += s;
-		
-		if(pos >= data.sz)
-			pos = 0;
-		
-		if(line.sz != s){
-			return Write(line.str(s));
-		}
-
-		if(again){
-			again = 0;
-			Write(VString((char*)&msrc_null_code, 4));
-			Write(VString((char*)&msrc_null_test, 8));
-		}
-
-		return 1;
-	}
-
-	int Read(unsigned int from, VString line){
-		if(from >= data.sz)
-			from = from % data.sz;
-
-		ALOCK(this);
-
-		int s = (pos >= from) ? pos - from : data.sz - from;
-		int r = minel(s, line.sz);
-		
-		memcpy(line, data.data + from, r);
-
-		if(pos < from && r < line.sz)
-			return Read(from + r, line.str(r)) + r;
-
-		return r;
-	}
-};*/
-
 class storm_binary_ring {
-	static const int ring_sz = S16K;
+	static const int ring_sz = S32K;
 	char data[ring_sz];
 	unsigned int pos;
 
@@ -287,7 +224,12 @@ public:
 //#define STORM_DEBUG_CMD_SOCKET	4
 #define STORM_DEBUG_CMD_RECV	4
 #define STORM_DEBUG_CMD_SEND	5
-#define STORM_DEBUG_CMD_CLOSE	6
+#define STORM_DEBUG_CMD_ERROR	8
+#define STORM_DEBUG_CMD_CLOSE	9
+
+#define STORM_DEBUG_CMD_ERROR_RING	101
+#define STORM_DEBUG_CMD_ERROR_SIZE	102
+
 
 #pragma pack(push, 4) // Set alignment to 1 byte
 
@@ -334,13 +276,15 @@ public:
 	}
 };
 
-class _listen_http_modstate_dbg_traff : public _listen_http_modstate_dbg_templ{
+class _listen_http_modstate_dbg_2ui : public _listen_http_modstate_dbg_templ{
 public:
-	unsigned int sock;
-	unsigned int traff;
+	unsigned int v1;
+	unsigned int v2;
 
-	void Encode(int type){
+	void Encode(int type, unsigned int _v1, unsigned int _v2){
 		_listen_http_modstate_dbg_templ::Encode(type, sizeof(*this));
+		v1 = _v1;
+		v2 = _v2;
 	}
 };
 
@@ -555,11 +499,9 @@ public:
 		r_recv_sec.Add(tm, sz);
 
 		// Debug
-		_listen_http_modstate_dbg_traff state;
-		state.sock = sock;
-		state.traff = sz;
+		_listen_http_modstate_dbg_2ui state;
 
-		state.Encode(STORM_DEBUG_CMD_RECV);
+		state.Encode(STORM_DEBUG_CMD_RECV, sock, sz);
 		debug_ring.write(state, state);
 
 		return ;
@@ -581,11 +523,8 @@ public:
 		r_send_sec.Add(tm, sz);
 
 		// Debug
-		_listen_http_modstate_dbg_traff state;
-		state.sock = sock;
-		state.traff = sz;
-
-		state.Encode(STORM_DEBUG_CMD_SEND);
+		_listen_http_modstate_dbg_2ui state;
+		state.Encode(STORM_DEBUG_CMD_SEND, sock, sz);
 		debug_ring.write(state, state);
 
 		return ;
@@ -787,9 +726,14 @@ public:
 		unsigned int head[3];
 		int s = debug_ring.read(rid, (unsigned char*)head, sizeof(head));
 
+		if(head[0] != 0xdeadf00d){			 
+			print("StormState.ReadDebug() head corrypt!");
+			return -1;
+		}
+
 		if(head[1] > size){
-			print("FATAL ERROR: small buffer!");
-			return 0;
+			print("StormState.ReadDebug() small size!");
+			return -2;
 		}
 
 		s = debug_ring.read(rid, buf, head[1]);
