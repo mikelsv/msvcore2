@@ -53,6 +53,10 @@ public:
 		return size;
 	}
 
+	char* GetData() {
+		return data;
+	}
+
 	int GetMaxSize() {
 		return maxsize;
 	}
@@ -168,6 +172,11 @@ public:
 
 		memcpy(data, data + count, size - count);
 		size -= count;
+		data[size] = '\0';
+	}
+
+	void MoveDataSize(int count) {
+		size += count;
 		data[size] = '\0';
 	}
 
