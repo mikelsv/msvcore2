@@ -155,12 +155,20 @@ typedef unsigned char u8;
 
 //#ifdef __GNUC__
 #ifndef max
+template <typename T>
+T max(T a, T b) {
+    return (a > b) ? a : b;
+}
 //#define max(a,b)            (((a) > (b)) ? (a) : (b))
-inline bool max(int a, int b){ return a > b ? a : b; }
+//inline bool max(int a, int b){ return a > b ? a : b; }
 #endif
 #ifndef min
+template <typename T>
+T min(T a, T b) {
+    return (a < b) ? a : b;
+}
 //#define min(a,b)            (((a) < (b)) ? (a) : (b))
-inline bool min(int a, int b){ return a < b ? a : b; }
+//inline bool min(int a, int b){ return a < b ? a : b; }
 #endif
 //#endif
 
