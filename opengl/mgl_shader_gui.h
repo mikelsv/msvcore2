@@ -171,7 +171,7 @@ public:
 
 		// Count
 		while(el = menu.Next(el)){
-			max_width = max(max_width, el->text.size());
+			max_width = max((unsigned int)max_width, el->text.size());
 			text_count += el->text.size();
 			count ++;
 		}

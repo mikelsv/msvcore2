@@ -144,7 +144,7 @@ public:
 
 	void OnTimeLeft(){
 		if(time_now > 0)
-			time_now = max(time_now - 1, 0);
+			time_now = max(time_now - 1, float(0.));
 
 		opt_update_title = 1;
 	}
