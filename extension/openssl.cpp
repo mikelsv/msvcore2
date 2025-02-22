@@ -1,16 +1,21 @@
+/*
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
 #if _MSC_VER == 1900
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\VS\\2015\\libssl.lib")
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\VS\\2015\\libcrypto.lib") 
 #else
-	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libssl.lib")
-	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libcrypto.lib") 
+	#pragma comment(lib,"libssl.lib")
+	#pragma comment(lib,"libcrypto.lib") 
 	#pragma comment (lib, "crypt32")
 #endif
 #else
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\ssleay32.lib") 
 	#pragma comment(lib,"C:\\Program Files (x86)\\OpenSSL\\lib\\libeay32.lib") 
-#endif
+#endif*/
+
+#pragma comment(lib,"libssl.lib")
+#pragma comment(lib,"libcrypto.lib") 
+#pragma comment(lib, "crypt32")
 
 // Compile perl Configure VC-WIN32 no-shared
 // nmake

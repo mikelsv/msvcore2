@@ -4,7 +4,7 @@
 #include "pcre2.h"
 
 #ifdef _DEBUG
-#pragma comment(lib,"pcre2-8d.lib")
+#pragma comment(lib,"pcre2-8-staticd.lib")
 #else
-#pragma comment(lib,"pcre2-8.lib")
+#pragma comment(lib,"pcre2-8-static.lib")
 #endif

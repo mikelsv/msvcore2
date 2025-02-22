@@ -155,7 +155,7 @@ public:
 			if(pos == ring_sz)
 				pos = 0;
 
-			int s = min(size, ring_sz - pos);
+			int s = min((unsigned int)size, ring_sz - pos);
 			memcpy(data + pos, d, s);
 			pos += s;
 			size -= s;
@@ -169,7 +169,7 @@ public:
 		unsigned int rsize = 0;
 
 		while(pos != rid && size){
-			int s = min(size, rid < pos ? pos - rid : ring_sz - pos);
+			int s = min((unsigned int)size, rid < pos ? pos - rid : ring_sz - pos);
 			memcpy(d, data + rid, s);
 
 			d += s;
